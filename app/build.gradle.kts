@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android) // Added kotlin-android plugin
+    alias(libs.plugins.kotlinKapt) // Updated to new alias name
 }
 
 android {
@@ -40,4 +42,29 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+    // Retrofit
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+
+    // OkHttp
+    implementation(libs.okhttp)
+
+    // Gson
+    implementation(libs.gson)
+
+    // CameraX
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+
+    // Glide
+    implementation(libs.glide)
+    kapt(libs.glide.compiler)
+
+    // Room
+    implementation(libs.room.runtime) // Corrected alias
+    kapt(libs.room.compiler)      // Corrected alias
+    implementation(libs.room.ktx)       // Corrected alias
 }

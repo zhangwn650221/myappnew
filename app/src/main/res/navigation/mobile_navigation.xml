@@ -1,0 +1,22 @@
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@id/navigation_chat">
+
+    <fragment
+        android:id="@+id/navigation_chat"
+        android:name="com.example.myappnew.ui.chat.ChatFragment"
+        android:label="Chat"
+        tools:layout="@layout/fragment_chat" />
+    <fragment
+        android:id="@+id/navigation_journal"
+        android:name="com.example.myappnew.ui.journal.JournalFragment"
+        android:label="Journal"
+        tools:layout="@layout/fragment_journal" />
+    <fragment
+        android:id="@+id/navigation_record"
+        android:name="com.example.myappnew.ui.record.RecordFragment"
+        android:label="Record"
+        tools:layout="@layout/fragment_record" />
+</navigation>
