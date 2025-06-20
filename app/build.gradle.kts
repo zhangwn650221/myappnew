@@ -1,17 +1,21 @@
+// 文件路径: <项目根目录>/app/build.gradle.kts
+
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android) // Added kotlin-android plugin
-    alias(libs.plugins.kotlinKapt) // Updated to new alias name
+    alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.google.ksp)
 }
-
+kotlin {
+    jvmToolchain(17)
+}
 android {
-    namespace = "com.example.myappnew"
-    compileSdk = 35
+    namespace = "com.example.myappnew" // 确保这里的包名和您项目的一致
+    compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.myappnew"
+        applicationId = "com.example.myappnew" // 确保这里的包名和您项目的一致
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -28,43 +32,27 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+    }
+    kotlinOptions {
     }
 }
 
 dependencies {
-
-    implementation(libs.appcompat)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.activity)
-    implementation(libs.constraintlayout)
     testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
-
-    // Retrofit
-    implementation(libs.retrofit)
-    implementation(libs.converter.gson)
-
-    // OkHttp
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+     implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.retrofit.mock)
 
-    // Gson
-    implementation(libs.gson)
-
-    // CameraX
-    implementation(libs.androidx.camera.core)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.view)
-
-    // Glide
-    implementation(libs.glide)
-    kapt(libs.glide.compiler)
-
-    // Room
-    implementation(libs.room.runtime) // Corrected alias
-    kapt(libs.room.compiler)      // Corrected alias
-    implementation(libs.room.ktx)       // Corrected alias
 }
