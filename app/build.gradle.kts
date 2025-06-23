@@ -5,14 +5,13 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.ksp)
 }
-kotlin {
-    jvmToolchain(17)
-}
 
-import java.util.Properties // Explicit import
+// It's generally better to place imports at the very top of the file,
+// but for Gradle Kotlin DSL, after plugins {} and before other blocks is common.
+import java.util.Properties
 
-// Properties
-val localProperties = Properties() // Use the imported Properties
+// Properties loading should be at a level where it can be accessed by android {} block
+val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     try {
@@ -20,9 +19,12 @@ if (localPropertiesFile.exists()) {
             localProperties.load(input)
         }
     } catch (e: java.io.IOException) {
-        // Handle error loading properties, e.g., log a warning
-        logger.warn("Warning: Could not load local.properties file: ${e.message}") // Using logger
+        logger.warn("Warning: Could not load local.properties file: ${e.message}")
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 android {
