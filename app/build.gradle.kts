@@ -8,6 +8,14 @@ plugins {
 kotlin {
     jvmToolchain(17)
 }
+
+// Properties
+val localProperties = java.util.Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
 android {
     namespace = "com.example.myappnew" // 确保这里的包名和您项目的一致
     compileSdk = 34
@@ -20,15 +28,33 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Expose API keys from local.properties as BuildConfig fields
+        // Default to an empty string if not found
+        buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"${localProperties.getProperty("DEEPSEEK_API_KEY", "")}\"")
+        // Keep the old LLM_API_KEY for now, can be removed later if fully migrated
+        buildConfigField("String", "LLM_API_KEY", "\"${localProperties.getProperty("LLM_API_KEY", localProperties.getProperty("GEMINI_API_KEY", ""))}\"")
     }
 
     buildTypes {
+        fun BuildType.setupApiKeys() {
+            buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
+            buildConfigField("String", "DEEPSEEK_API_KEY", "\"${localProperties.getProperty("DEEPSEEK_API_KEY", "")}\"")
+            buildConfigField("String", "LLM_API_KEY", "\"${localProperties.getProperty("LLM_API_KEY", localProperties.getProperty("GEMINI_API_KEY", ""))}\"")
+        }
+
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            setupApiKeys()
+        }
+        debug {
+            // BuildConfig fields from defaultConfig are available in debug
+            // If specific overrides for debug are needed, they can be set here too.
+            // setupApiKeys() // Already inherited from defaultConfig, but can be explicit if needed for clarity or override
         }
     }
     compileOptions {
@@ -54,5 +80,7 @@ dependencies {
      implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.retrofit.mock)
+    // implementation(libs.openai.kotlin.client) // Commented out as we are using Gemini
+    implementation(libs.google.ai.client)
 
 }

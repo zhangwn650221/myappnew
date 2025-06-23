@@ -1,11 +1,13 @@
 package com.example.myappnew.services.llm;
 
-// import retrofit2.Retrofit; // Would be used if Retrofit is functional
-// import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.mock.Calls; // For creating a mock Call object for the dummy
+import com.example.myappnew.BuildConfig;
+import android.util.Log; // Import Log for debugging
+import retrofit2.Call;
+import retrofit2.mock.Calls;
 
 /**
  * Provides access to Large Language Model (LLM) services.
+ * This class will decide which LLM implementation to use (e.g., Gemini, DeepSeek).
  *
  * ---
  *
@@ -101,68 +103,115 @@ import retrofit2.mock.Calls; // For creating a mock Call object for the dummy
  * ---
  */
 public class LlmServiceProvider {
-    // private static final String BASE_URL_PLACEHOLDER = "https://api.example-llm.com/"; // Placeholder
-    private LlmService dummyService;
+
+    private LlmService serviceImplementation;
+    private String geminiApiKey;
+    // private String deepSeekApiKey; // For future use
+
+    // Enum to represent the selected LLM provider
+    public enum LlmProvider {
+        GEMINI,
+        DEEPSEEK,
+        // OPENAI, // Can be added back later
+        MOCK // For when no API key is valid or for testing
+    }
+
+    private LlmProvider currentProvider = LlmProvider.MOCK; // Default to MOCK
+    private static final String TAG_LLM_PROVIDER = "LlmServiceProvider"; // Log TAG
 
     public LlmServiceProvider() {
-        // In a real scenario, initialize Retrofit here
-        // Retrofit retrofit = new Retrofit.Builder()
-        // .baseUrl(BASE_URL_PLACEHOLDER)
-        // .addConverterFactory(GsonConverterFactory.create())
-        // .build();
-        // service = retrofit.create(LlmService.class);
+        this.geminiApiKey = BuildConfig.GEMINI_API_KEY;
+        Log.d(TAG_LLM_PROVIDER, "Read from BuildConfig.GEMINI_API_KEY: [" + this.geminiApiKey + "]"); // DEBUG LINE
+        // this.deepSeekApiKey = BuildConfig.DEEPSEEK_API_KEY; // For future use
 
-        // For now, use a dummy implementation
-        this.dummyService = new LlmService() {
+        // Priority: Gemini first for now. This logic will be expanded for user selection.
+        if (isValidApiKey(this.geminiApiKey)) {
+            Log.i(TAG_LLM_PROVIDER, "Valid Gemini API Key found. Initializing GeminiLlmServiceImpl.");
+            this.serviceImplementation = new GeminiLlmServiceImpl(this.geminiApiKey);
+            this.currentProvider = LlmProvider.GEMINI;
+        }
+        // else if (isValidApiKey(this.deepSeekApiKey)) { // Future: Add DeepSeek
+        //     System.out.println("LlmServiceProvider: Valid DeepSeek API Key found. Initializing DeepSeekLlmServiceImpl.");
+        //     // this.serviceImplementation = new DeepSeekLlmServiceImpl(this.deepSeekApiKey);
+        //     // this.currentProvider = LlmProvider.DEEPSEEK;
+        // }
+        else {
+            Log.w(TAG_LLM_PROVIDER, "No valid API Key found for configured providers. Using MockLlmServiceImpl.");
+            String mockMessage = "No valid API Key (Gemini checked). Calls are mocked.";
+            if (this.geminiApiKey == null || this.geminiApiKey.isEmpty()){
+                 mockMessage = "Gemini API Key is missing from BuildConfig. Calls are mocked.";
+                 Log.w(TAG_LLM_PROVIDER, mockMessage);
+            } else if (isPlaceholderKey(this.geminiApiKey)) {
+                 mockMessage = "Gemini API Key found in BuildConfig is a placeholder (" + this.geminiApiKey + "). Calls are mocked.";
+                 Log.w(TAG_LLM_PROVIDER, mockMessage);
+            } else {
+                 // This case should ideally not be hit if isValidApiKey is comprehensive
+                 // but as a fallback if it's not a placeholder but still considered invalid.
+                 mockMessage = "Gemini API Key [" + this.geminiApiKey + "] was considered invalid by isValidApiKey. Calls are mocked.";
+                 Log.w(TAG_LLM_PROVIDER, mockMessage);
+            }
+            this.serviceImplementation = createMockService(mockMessage);
+            this.currentProvider = LlmProvider.MOCK;
+        }
+    }
+
+    private boolean isPlaceholderKey(String apiKey) {
+        return "YOUR_API_KEY_GOES_HERE".equals(apiKey) ||
+               "YOUR_GEMINI_API_KEY_HERE".equals(apiKey) ||
+               "YOUR_DEEPSEEK_API_KEY_HERE".equals(apiKey);
+    }
+
+    private boolean isValidApiKey(String apiKey) {
+        return apiKey != null && !apiKey.isEmpty() && !isPlaceholderKey(apiKey);
+    }
+
+    // Public method to allow changing the provider, e.g., from user settings
+    // This is a simplified version; a real app might need more robust lifecycle management
+    public void setActiveProvider(LlmProvider provider) {
+        // This is a placeholder for future user selection logic.
+        // For now, it's determined at construction.
+        // If we were to implement dynamic switching:
+        // switch (provider) {
+        //     case GEMINI:
+        //         if (isValidApiKey(geminiApiKey)) serviceImplementation = new GeminiLlmServiceImpl(geminiApiKey);
+        //         else serviceImplementation = createMockService("Gemini key invalid, using mock.");
+        //         break;
+        //     // Add other cases
+        //     default:
+        //         serviceImplementation = createMockService("Defaulting to mock service.");
+        // }
+        // currentProvider = provider;
+        Log.i(TAG_LLM_PROVIDER, "setActiveProvider called, but dynamic switching is not fully implemented yet. Current provider: " + currentProvider.name());
+    }
+
+
+    private LlmService createMockService(final String logMessagePrefix) {
+        return new LlmService() {
             @Override
-            public retrofit2.Call<LlmResponse> generateText(LlmRequest request) {
-                LlmResponse response = new LlmResponse();
-                if (request.getPrompt() == null || request.getPrompt().isEmpty()) {
-                    response.setError("Prompt cannot be empty.");
-                } else if (request.getPrompt().toLowerCase().contains("error_test")) {
-                    response.setError("Simulated error from LLM.");
-                } else {
-                    response.setGeneratedText("This is a dummy response to: " + request.getPrompt());
-                }
-                // Return a mock Retrofit Call that synchronously returns the response
-                // Requires retrofit2.mock.Calls dependency, which might not be present.
-                // If 'retrofit2.mock.Calls' is unavailable, this line would cause a compile error.
-                // For now, assuming it might be available or can be added later if needed for robust testing.
-                // If not, returning null was the previous approach, but this is better for a dummy.
-                if (response.getError() != null) {
-                    return Calls.failure(new Throwable(response.getError()));
-                } else {
-                    return Calls.response(response);
-                }
-            }
+            public Call<LlmResponse> generateText(LlmRequest request) {
+                Log.i(TAG_LLM_PROVIDER, "LlmService (Mock): " + logMessagePrefix + " | Prompt: " + request.getPrompt());
+                LlmResponse llmResponse = new LlmResponse();
 
-            // If using non-Retrofit async, e.g.:
-            /*
-            public void generateTextAsync(LlmRequest request, LlmCallback<LlmResponse> callback) {
-                LlmResponse response = new LlmResponse();
                 if (request.getPrompt() == null || request.getPrompt().isEmpty()) {
-                    response.setError("Prompt cannot be empty.");
-                    // In a true async callback, you'd call onError on the callback.
-                    // For this dummy example, just setting error in response.
-                    // callback.onError(new IllegalArgumentException("Prompt cannot be empty."));
+                    llmResponse.setError("Prompt cannot be empty (from mock).");
                 } else if (request.getPrompt().toLowerCase().contains("error_test")) {
-                    response.setError("Simulated error from LLM.");
+                    llmResponse.setError("Simulated error from LLM (mock).");
+                } else {
+                    llmResponse.setGeneratedText("(Mock Response) " + logMessagePrefix + ": " + request.getPrompt());
                 }
-                else {
-                    response.setGeneratedText("This is a dummy async response to: " + request.getPrompt());
-                    // callback.onSuccess(response);
+
+                if (llmResponse.getError() != null) {
+                    return Calls.failure(new Throwable(llmResponse.getError()));
+                } else {
+                    // For mock, we can use retrofit2.mock.Calls.response directly
+                    return Calls.response(llmResponse);
                 }
             }
-            */
         };
     }
 
     public LlmService getService() {
-        // Log or indicate that this is a dummy service if necessary
-        System.out.println("LlmServiceProvider: Providing DUMMY LlmService.");
-        return dummyService;
+        Log.i(TAG_LLM_PROVIDER, "Providing service implementation for " + currentProvider.name());
+        return serviceImplementation;
     }
-
-    // TODO: Add methods to configure API keys securely (e.g., from BuildConfig or other secure storage).
-    // For now, API key handling is deferred.
 }

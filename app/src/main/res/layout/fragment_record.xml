@@ -31,7 +31,17 @@
         android:layout_height="wrap_content"
         android:text="Record Voice &amp; Get Advice"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_marginBottom="24dp"/>
+        android:layout_marginBottom="12dp"/>
+
+    <ImageView
+        android:id="@+id/image_preview"
+        android:layout_width="wrap_content"
+        android:layout_height="100dp"
+        android:adjustViewBounds="true"
+        android:scaleType="centerInside"
+        android.contentDescription="Preview of captured image"
+        android:visibility="gone"
+        android:layout_marginBottom="12dp"/>
 
     <TextView
         android:id="@+id/text_ai_suggestion_title"

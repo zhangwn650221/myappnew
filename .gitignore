@@ -12,4 +12,10 @@
 /captures
 .externalNativeBuild
 .cxx
+
+# Secrets
 local.properties
+/local.properties # Ensures both root and potentially module-level local.properties are ignored
+secrets.properties
+*.keystore
+*.jks
