@@ -9,11 +9,20 @@ kotlin {
     jvmToolchain(17)
 }
 
+import java.util.Properties // Explicit import
+
 // Properties
-val localProperties = java.util.Properties()
+val localProperties = Properties() // Use the imported Properties
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.inputStream().use { localProperties.load(it) }
+    try {
+        localPropertiesFile.inputStream().use { input ->
+            localProperties.load(input)
+        }
+    } catch (e: java.io.IOException) {
+        // Handle error loading properties, e.g., log a warning
+        logger.warn("Warning: Could not load local.properties file: ${e.message}") // Using logger
+    }
 }
 
 android {
