@@ -31,6 +31,10 @@ android {
     namespace = "com.example.myappnew" // 确保这里的包名和您项目的一致
     compileSdk = 34
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.example.myappnew" // 确保这里的包名和您项目的一致
         minSdk = 24
