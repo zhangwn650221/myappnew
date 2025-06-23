@@ -43,12 +43,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // Expose API keys from local.properties as BuildConfig fields
-        // Default to an empty string if not found
-        buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
-        buildConfigField("String", "DEEPSEEK_API_KEY", "\"${localProperties.getProperty("DEEPSEEK_API_KEY", "")}\"")
-        // Keep the old LLM_API_KEY for now, can be removed later if fully migrated
-        buildConfigField("String", "LLM_API_KEY", "\"${localProperties.getProperty("LLM_API_KEY", localProperties.getProperty("GEMINI_API_KEY", ""))}\"")
+
+        // API keys from local.properties (ensure these are without quotes in local.properties)
+        val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY", "")
+        val deepSeekApiKey = localProperties.getProperty("DEEPSEEK_API_KEY", "")
+        // Fallback for LLM_API_KEY to geminiApiKey if LLM_API_KEY itself is not in local.properties
+        val llmApiKeyDefault = localProperties.getProperty("LLM_API_KEY", geminiApiKey)
+
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepSeekApiKey\"")
+        buildConfigField("String", "LLM_API_KEY", "\"$llmApiKeyDefault\"")
     }
 
     buildTypes {
@@ -58,16 +62,23 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Explicitly define for release. defaultConfig handles debug.
-            buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
-            buildConfigField("String", "DEEPSEEK_API_KEY", "\"${localProperties.getProperty("DEEPSEEK_API_KEY", "")}\"")
-            buildConfigField("String", "LLM_API_KEY", "\"${localProperties.getProperty("LLM_API_KEY", localProperties.getProperty("GEMINI_API_KEY", ""))}\"")
+            // Re-apply for release or ensure they are correctly inherited if values differ
+            // For simplicity, if release uses the same keys as debug/defaultConfig,
+            // these re-declarations might not be strictly necessary if already in defaultConfig.
+            // However, to be explicit for release:
+            val geminiApiKeyRelease = localProperties.getProperty("GEMINI_API_KEY", "")
+            val deepSeekApiKeyRelease = localProperties.getProperty("DEEPSEEK_API_KEY", "")
+            val llmApiKeyReleaseDefault = localProperties.getProperty("LLM_API_KEY", geminiApiKeyRelease)
+
+            buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKeyRelease\"")
+            buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepSeekApiKeyRelease\"")
+            buildConfigField("String", "LLM_API_KEY", "\"$llmApiKeyReleaseDefault\"")
         }
         debug {
-            // Inherits buildConfigFields from defaultConfig.
-            // If you needed different keys for debug, you would define them here.
-            // For example:
-            // buildConfigField("String", "GEMINI_API_KEY", "\"debug_gemini_key\"")
+            // Inherits buildConfigFields from defaultConfig by default.
+            // If you needed different keys for debug, you would define/override them here, e.g.:
+            // val geminiApiKeyDebug = localProperties.getProperty("DEBUG_GEMINI_API_KEY", "")
+            // buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKeyDebug\"")
         }
     }
     compileOptions {
