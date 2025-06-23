@@ -48,24 +48,22 @@ android {
     }
 
     buildTypes {
-        fun BuildType.setupApiKeys() {
-            buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
-            buildConfigField("String", "DEEPSEEK_API_KEY", "\"${localProperties.getProperty("DEEPSEEK_API_KEY", "")}\"")
-            buildConfigField("String", "LLM_API_KEY", "\"${localProperties.getProperty("LLM_API_KEY", localProperties.getProperty("GEMINI_API_KEY", ""))}\"")
-        }
-
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            setupApiKeys()
+            // Explicitly define for release. defaultConfig handles debug.
+            buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
+            buildConfigField("String", "DEEPSEEK_API_KEY", "\"${localProperties.getProperty("DEEPSEEK_API_KEY", "")}\"")
+            buildConfigField("String", "LLM_API_KEY", "\"${localProperties.getProperty("LLM_API_KEY", localProperties.getProperty("GEMINI_API_KEY", ""))}\"")
         }
         debug {
-            // BuildConfig fields from defaultConfig are available in debug
-            // If specific overrides for debug are needed, they can be set here too.
-            // setupApiKeys() // Already inherited from defaultConfig, but can be explicit if needed for clarity or override
+            // Inherits buildConfigFields from defaultConfig.
+            // If you needed different keys for debug, you would define them here.
+            // For example:
+            // buildConfigField("String", "GEMINI_API_KEY", "\"debug_gemini_key\"")
         }
     }
     compileOptions {
