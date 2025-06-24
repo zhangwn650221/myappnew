@@ -126,25 +126,19 @@ public class GeminiLlmServiceImpl implements LlmService {
                 public void onSuccess(GenerateContentResponse geminiResponse) {
                     if (cancelled) return;
                     LlmResponse llmResp = new LlmResponse();
-                    if (geminiResponse != null && geminiResponse.getText() != null) {
-                        llmResp.setGeneratedText(geminiResponse.getText());
-                         callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp)));
+                    if (geminiResponse != null && geminiResponse.getCandidatesList() != null && !geminiResponse.getCandidatesList().isEmpty() && geminiResponse.getCandidatesList().get(0).getContent() != null && geminiResponse.getCandidatesList().get(0).getContent().getPartsList() != null && !geminiResponse.getCandidatesList().get(0).getContent().getPartsList().isEmpty() && geminiResponse.getCandidatesList().get(0).getContent().getPartsList().get(0).getText() != null) {
+                        llmResp.setGeneratedText(geminiResponse.getCandidatesList().get(0).getContent().getPartsList().get(0).getText());
+                        callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp)));
                     } else {
                         String errorMessage = "Gemini response content is null or empty.";
-                        if (geminiResponse != null && geminiResponse.getFinishReason() != null) {
-                             errorMessage += " Finish Reason: " + geminiResponse.getFinishReason().toString();
+                        if (geminiResponse != null && geminiResponse.getCandidatesList() != null && !geminiResponse.getCandidatesList().isEmpty() && geminiResponse.getCandidatesList().get(0).getFinishReason() != null) {
+                            errorMessage += " Finish Reason: " + geminiResponse.getCandidatesList().get(0).getFinishReason().toString();
+                        } else if (geminiResponse != null && geminiResponse.getPromptFeedback() != null && geminiResponse.getPromptFeedback().getBlockReason() != null) {
+                            errorMessage += " Prompt Feedback Block Reason: " + geminiResponse.getPromptFeedback().getBlockReason().toString();
                         }
-                        // It might be better to check candidates and prompt feedback for more detailed errors
-                        // For example, if content was blocked by safety settings.
-                        // if (geminiResponse != null && geminiResponse.getPromptFeedback() != null &&
-                        //    geminiResponse.getPromptFeedback().getBlockReason() != null) {
-                        //    errorMessage += " Blocked: " + geminiResponse.getPromptFeedback().getBlockReason().toString();
-                        // }
                         llmResp.setError(errorMessage);
                         System.err.println("GeminiLlmServiceImpl: " + errorMessage);
                         callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp))); // Still a "success" in terms of HTTP, but LlmResponse has error
-                        // Or treat as failure:
-                        // callbackExecutor.execute(() -> callback.onFailure(ListenableFutureCall.this, new Throwable(errorMessage)));
                     }
                 }
 
