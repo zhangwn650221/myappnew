@@ -16,6 +16,7 @@ okhttp = "4.12.0"
 retrofit = "2.9.0" 
 # openaiClient = "3.5.0" # OpenAI API Client version, check for latest stable - Commented out as we are using Gemini
 geminiSdk = "0.5.0" # Google AI Gemini SDK version, check for latest stable
+guava = "33.0.0-android" # Added Guava version
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,6 +37,7 @@ retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-
 retrofit-mock = { group = "com.squareup.retrofit2", name = "retrofit-mock", version.ref = "retrofit" }
 # openai-kotlin-client = { group = "com.aallam.openai", name = "openai-client", version.ref = "openaiClient" } # Commented out
 google-ai-client = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "geminiSdk"}
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" } # Added Guava library
 
 
 [plugins]

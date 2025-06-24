@@ -106,5 +106,6 @@ dependencies {
     implementation(libs.retrofit.mock)
     // implementation(libs.openai.kotlin.client) // Commented out as we are using Gemini
     implementation(libs.google.ai.client)
+    implementation(libs.guava) // Added Guava dependency
 
 }
