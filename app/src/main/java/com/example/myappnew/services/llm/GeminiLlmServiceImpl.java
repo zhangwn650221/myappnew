@@ -4,18 +4,25 @@ import com.example.myappnew.BuildConfig;
 import com.google.ai.client.generativeai.GenerativeModel;
 import com.google.ai.client.generativeai.java.GenerativeModelFutures;
 import com.google.ai.client.generativeai.type.BlockThreshold;
+import com.google.ai.client.generativeai.type.Candidate;
 import com.google.ai.client.generativeai.type.Content;
+import com.google.ai.client.generativeai.type.FinishReason;
 import com.google.ai.client.generativeai.type.GenerateContentResponse;
 import com.google.ai.client.generativeai.type.GenerationConfig;
 import com.google.ai.client.generativeai.type.HarmCategory;
+// Import Part if it's used, but current attempt uses content.toString() or candidate.toString()
+// import com.google.ai.client.generativeai.type.Part; 
+import com.google.ai.client.generativeai.type.PromptFeedback;
 import com.google.ai.client.generativeai.type.SafetySetting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Collections;
+// Import List if it's used
+// import java.util.List; 
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors; // Using a simple executor for the demo
+import java.util.concurrent.Executors; 
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -24,32 +31,22 @@ import retrofit2.Response;
 public class GeminiLlmServiceImpl implements LlmService {
 
     private GenerativeModelFutures generativeModelFutures;
-    private final Executor mainExecutor = Executors.newSingleThreadExecutor(); // Or use Android's MainThreadExecutor
+    private final Executor mainExecutor = Executors.newSingleThreadExecutor();
 
     public GeminiLlmServiceImpl(String apiKey) {
         if (apiKey == null || apiKey.isEmpty()) {
             System.err.println("GeminiLlmServiceImpl: API Key is null or empty. Service will not function.");
-            // Optionally throw an IllegalArgumentException or handle this state appropriately
             return;
         }
 
-        // Configure safety settings (adjust as needed)
-        GenerationConfig generationConfig = new GenerationConfig.Builder()
-            // .temperature(0.9f) // Example configuration
-            // .topK(1)
-            // .topP(1f)
-            // .maxOutputTokens(2048)
-            .build();
-
+        GenerationConfig generationConfig = new GenerationConfig.Builder().build();
         SafetySetting harassmentSafety = new SafetySetting(HarmCategory.HARASSMENT, BlockThreshold.MEDIUM_AND_ABOVE);
-        SafetySetting hateSpeechSafety = new SafetySetting(HarmCategory.HATE_SPEECH, BlockThreshold.MEDIUM_AND_ABOVE);
-        // Add other safety settings as needed
 
         GenerativeModel gm = new GenerativeModel(
-                "gemini-1.5-flash-latest", // Or another suitable model like "gemini-pro"
+                "gemini-1.5-flash-latest", 
                 apiKey,
                 generationConfig,
-                Collections.singletonList(harassmentSafety) // Pass list of safety settings
+                Collections.singletonList(harassmentSafety) 
         );
         this.generativeModelFutures = GenerativeModelFutures.from(gm);
     }
@@ -57,8 +54,7 @@ public class GeminiLlmServiceImpl implements LlmService {
     @Override
     public Call<LlmResponse> generateText(LlmRequest llmRequest) {
         if (generativeModelFutures == null) {
-            System.err.println("GeminiLlmServiceImpl: GenerativeModelFutures not initialized (likely due to missing API key).");
-            // Return a Call that immediately fails
+            System.err.println("GeminiLlmServiceImpl: GenerativeModelFutures not initialized.");
             return new Call<LlmResponse>() {
                 @Override
                 public Response<LlmResponse> execute() throws java.io.IOException {
@@ -66,7 +62,7 @@ public class GeminiLlmServiceImpl implements LlmService {
                 }
                 @Override
                 public void enqueue(Callback<LlmResponse> callback) {
-                    callback.onFailure(this, new IllegalStateException("Gemini client not initialized (API Key likely missing)."));
+                    callback.onFailure(this, new IllegalStateException("Gemini client not initialized."));
                 }
                 @Override public boolean isExecuted() { return false; }
                 @Override public void cancel() {}
@@ -82,38 +78,77 @@ public class GeminiLlmServiceImpl implements LlmService {
                 .build();
 
         ListenableFuture<GenerateContentResponse> future = generativeModelFutures.generateContent(content);
-
-        // Adapt ListenableFuture to Retrofit Call
         return new ListenableFutureCall<>(future, mainExecutor);
     }
 
-    // Adapter class to bridge ListenableFuture with Retrofit's Call
     private static class ListenableFutureCall<T> implements Call<T> {
         private final ListenableFuture<GenerateContentResponse> future;
         private final Executor callbackExecutor;
         private volatile boolean cancelled = false;
-        private T adaptedResponse; // To store the adapted response for synchronous execute (if ever needed)
 
         ListenableFutureCall(ListenableFuture<GenerateContentResponse> future, Executor callbackExecutor) {
             this.future = future;
             this.callbackExecutor = callbackExecutor;
         }
+        
+        private String extractTextFromCandidate(Candidate candidate) {
+            if (candidate != null) {
+                Content content = candidate.getContent();
+                if (content != null) {
+                    // Based on user feedback that Content only showed toString() and hashCode(),
+                    // we'll try toString() as a last resort. This is speculative.
+                    String potentialText = content.toString();
+                    if (potentialText != null && !potentialText.isEmpty()) {
+                        // This might return more than just the text, e.g., "Content{role: \"model\", parts: [TextPart{text=\"Hello\"}]}"
+                        // Further processing might be needed if this works, or if it's not the actual text.
+                        // For now, let's see what toString() gives us.
+                        System.out.println("GeminiLlmServiceImpl: Extracted from content.toString(): " + potentialText);
+                        return potentialText; 
+                    }
+                }
+            }
+            return null;
+        }
 
         @Override
         public Response<T> execute() throws java.io.IOException {
-            // Blocking execute: Generally, avoid on Android's main thread.
-            // This is a simplified implementation for the Call interface.
             try {
-                GenerateContentResponse geminiResponse = future.get(); // This blocks
+                GenerateContentResponse geminiResponse = future.get(); 
                 LlmResponse llmResp = new LlmResponse();
-                if (geminiResponse.getText() != null) {
-                    llmResp.setGeneratedText(geminiResponse.getText());
-                } else {
-                    llmResp.setError("Gemini response was null or empty.");
-                    // Consider checking geminiResponse.getCandidatesList() and FinishReason
+                String extractedText = null;
+                FinishReason finishReason = null;
+                String blockReasonText = null;
+
+                if (geminiResponse != null && geminiResponse.getCandidates() != null && !geminiResponse.getCandidates().isEmpty()) {
+                    Candidate candidate = geminiResponse.getCandidates().get(0);
+                    if (candidate != null) {
+                        finishReason = candidate.getFinishReason();
+                        extractedText = extractTextFromCandidate(candidate);
+                    }
                 }
-                adaptedResponse = (T) llmResp; // Unchecked cast, ensure T is LlmResponse
-                return Response.success(adaptedResponse);
+
+                if (geminiResponse != null && geminiResponse.getPromptFeedback() != null) {
+                    PromptFeedback promptFeedback = geminiResponse.getPromptFeedback();
+                    if (promptFeedback.getBlockReason() != null) {
+                         blockReasonText = "Prompt Feedback Block Reason: " + promptFeedback.getBlockReason().toString();
+                    }
+                }
+
+                if (extractedText != null) {
+                    // TODO: Potentially parse 'extractedText' if it's from toString() and contains more than just the message.
+                    // For now, we'll use it as is.
+                    llmResp.setGeneratedText(extractedText);
+                } else {
+                    String errorMessage = "Gemini response content is null or empty.";
+                    if (finishReason != null) {
+                        errorMessage += " Finish Reason: " + finishReason.toString();
+                    }
+                    if (blockReasonText != null) {
+                        errorMessage += (finishReason != null ? " | " : " ") + blockReasonText;
+                    }
+                    llmResp.setError(errorMessage);
+                }
+                return Response.success((T) llmResp);
             } catch (Exception e) {
                 throw new java.io.IOException("Failed to execute Gemini request", e);
             }
@@ -126,19 +161,40 @@ public class GeminiLlmServiceImpl implements LlmService {
                 public void onSuccess(GenerateContentResponse geminiResponse) {
                     if (cancelled) return;
                     LlmResponse llmResp = new LlmResponse();
-                    if (geminiResponse != null && geminiResponse.getCandidatesList() != null && !geminiResponse.getCandidatesList().isEmpty() && geminiResponse.getCandidatesList().get(0).getContent() != null && geminiResponse.getCandidatesList().get(0).getContent().getPartsList() != null && !geminiResponse.getCandidatesList().get(0).getContent().getPartsList().isEmpty() && geminiResponse.getCandidatesList().get(0).getContent().getPartsList().get(0).getText() != null) {
-                        llmResp.setGeneratedText(geminiResponse.getCandidatesList().get(0).getContent().getPartsList().get(0).getText());
+                    String extractedText = null;
+                    FinishReason finishReason = null; 
+                    String blockReasonText = null;
+
+                    if (geminiResponse != null && geminiResponse.getCandidates() != null && !geminiResponse.getCandidates().isEmpty()) {
+                        Candidate candidate = geminiResponse.getCandidates().get(0); 
+                        if (candidate != null) {
+                            finishReason = candidate.getFinishReason();
+                            extractedText = extractTextFromCandidate(candidate);
+                        }
+                    }
+
+                    if (geminiResponse != null && geminiResponse.getPromptFeedback() != null) {
+                        PromptFeedback promptFeedback = geminiResponse.getPromptFeedback();
+                         if (promptFeedback.getBlockReason() != null) {
+                            blockReasonText = "Prompt Feedback Block Reason: " + promptFeedback.getBlockReason().toString();
+                        }
+                    }
+
+                    if (extractedText != null) {
+                        // TODO: Potentially parse 'extractedText' if it's from toString() and contains more than just the message.
+                        llmResp.setGeneratedText(extractedText); 
                         callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp)));
                     } else {
                         String errorMessage = "Gemini response content is null or empty.";
-                        if (geminiResponse != null && geminiResponse.getCandidatesList() != null && !geminiResponse.getCandidatesList().isEmpty() && geminiResponse.getCandidatesList().get(0).getFinishReason() != null) {
-                            errorMessage += " Finish Reason: " + geminiResponse.getCandidatesList().get(0).getFinishReason().toString();
-                        } else if (geminiResponse != null && geminiResponse.getPromptFeedback() != null && geminiResponse.getPromptFeedback().getBlockReason() != null) {
-                            errorMessage += " Prompt Feedback Block Reason: " + geminiResponse.getPromptFeedback().getBlockReason().toString();
+                        if (finishReason != null) {
+                            errorMessage += " Finish Reason: " + finishReason.toString();
+                        }
+                         if (blockReasonText != null) {
+                            errorMessage += (finishReason != null ? " | " : " ") + blockReasonText;
                         }
                         llmResp.setError(errorMessage);
                         System.err.println("GeminiLlmServiceImpl: " + errorMessage);
-                        callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp))); // Still a "success" in terms of HTTP, but LlmResponse has error
+                        callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp))); 
                     }
                 }
 
@@ -149,44 +205,14 @@ public class GeminiLlmServiceImpl implements LlmService {
                     t.printStackTrace();
                     callbackExecutor.execute(() -> callback.onFailure(ListenableFutureCall.this, t));
                 }
-            }, callbackExecutor); // Ensure Futures uses the same executor for its own internal needs if not specified
+            }, callbackExecutor);
         }
 
-        @Override
-        public boolean isExecuted() {
-            return future.isDone(); // Or a more sophisticated tracking if needed
-        }
-
-        @Override
-        public void cancel() {
-            cancelled = true;
-            future.cancel(true); // Propagate cancellation
-        }
-
-        @Override
-        public boolean isCanceled() {
-            return cancelled || future.isCancelled();
-        }
-
-        @Override
-        public Call<T> clone() {
-            // Create a new ListenableFutureCall with the same (or new) future.
-            // For simplicity, if the original future can be retried, this might work.
-            // However, ListenableFuture itself might not be "cloneable" in a way Retrofit expects.
-            // This simplified version might not be robust for all Retrofit retry scenarios.
-            return new ListenableFutureCall<>(future, callbackExecutor); // This is a shallow clone regarding the future.
-        }
-
-        @Override
-        public okhttp3.Request request() {
-            // Gemini SDK handles its own requests. We can't easily expose an OkHttp Request.
-            // Return a dummy or throw UnsupportedOperationException.
-            return new okhttp3.Request.Builder().url("http://localhost/gemini-sdk-internal").build();
-        }
-
-        @Override
-        public okio.Timeout timeout() {
-            return okio.Timeout.NONE; // Gemini SDK manages its own timeouts.
-        }
+        @Override public boolean isExecuted() { return future.isDone(); }
+        @Override public void cancel() { cancelled = true; future.cancel(true); }
+        @Override public boolean isCanceled() { return cancelled || future.isCancelled(); }
+        @Override public Call<T> clone() { return new ListenableFutureCall<>(future, callbackExecutor); }
+        @Override public okhttp3.Request request() { return new okhttp3.Request.Builder().url("http://localhost/gemini-sdk-internal").build(); }
+        @Override public okio.Timeout timeout() { return okio.Timeout.NONE; }
     }
 }
