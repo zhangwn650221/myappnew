@@ -126,19 +126,29 @@ public class GeminiLlmServiceImpl implements LlmService {
                 public void onSuccess(GenerateContentResponse geminiResponse) {
                     if (cancelled) return;
                     LlmResponse llmResp = new LlmResponse();
-                    if (geminiResponse != null && geminiResponse.getCandidatesList() != null && !geminiResponse.getCandidatesList().isEmpty() && geminiResponse.getCandidatesList().get(0).getContent() != null && geminiResponse.getCandidatesList().get(0).getContent().getPartsList() != null && !geminiResponse.getCandidatesList().get(0).getContent().getPartsList().isEmpty() && geminiResponse.getCandidatesList().get(0).getContent().getPartsList().get(0).getText() != null) {
-                        llmResp.setGeneratedText(geminiResponse.getCandidatesList().get(0).getContent().getPartsList().get(0).getText());
+                    // Ensuring we use getCandidates() as per the attempted fix.
+                    if (geminiResponse != null && geminiResponse.getCandidates() != null && !geminiResponse.getCandidates().isEmpty() &&
+                        geminiResponse.getCandidates().get(0).getContent() != null &&
+                        geminiResponse.getCandidates().get(0).getContent().getPartsList() != null &&
+                        !geminiResponse.getCandidates().get(0).getContent().getPartsList().isEmpty() &&
+                        geminiResponse.getCandidates().get(0).getContent().getPartsList().get(0).getText() != null) {
+                        llmResp.setGeneratedText(geminiResponse.getCandidates().get(0).getContent().getPartsList().get(0).getText());
                         callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp)));
                     } else {
                         String errorMessage = "Gemini response content is null or empty.";
-                        if (geminiResponse != null && geminiResponse.getCandidatesList() != null && !geminiResponse.getCandidatesList().isEmpty() && geminiResponse.getCandidatesList().get(0).getFinishReason() != null) {
-                            errorMessage += " Finish Reason: " + geminiResponse.getCandidatesList().get(0).getFinishReason().toString();
-                        } else if (geminiResponse != null && geminiResponse.getPromptFeedback() != null && geminiResponse.getPromptFeedback().getBlockReason() != null) {
+                        // Check candidate for FinishReason
+                        if (geminiResponse != null && geminiResponse.getCandidates() != null && !geminiResponse.getCandidates().isEmpty() &&
+                            geminiResponse.getCandidates().get(0).getFinishReason() != null) {
+                            errorMessage += " Finish Reason: " + geminiResponse.getCandidates().get(0).getFinishReason().toString();
+                        }
+                        // Check PromptFeedback for BlockReason as a fallback or additional info
+                        else if (geminiResponse != null && geminiResponse.getPromptFeedback() != null &&
+                                 geminiResponse.getPromptFeedback().getBlockReason() != null) {
                             errorMessage += " Prompt Feedback Block Reason: " + geminiResponse.getPromptFeedback().getBlockReason().toString();
                         }
                         llmResp.setError(errorMessage);
                         System.err.println("GeminiLlmServiceImpl: " + errorMessage);
-                        callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp))); // Still a "success" in terms of HTTP, but LlmResponse has error
+                        callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp)));
                     }
                 }
 
