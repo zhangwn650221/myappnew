@@ -22,19 +22,24 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+// Consider using Android's Log class for better log management in production apps.
+// import android.util.Log;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class GeminiLlmServiceImpl implements LlmService {
 
+    // private static final String TAG = "GeminiLlmServiceImpl"; // For Log.d/e
+
     private GenerativeModelFutures generativeModelFutures;
     private final Executor mainExecutor = Executors.newSingleThreadExecutor();
 
     public GeminiLlmServiceImpl(String apiKey) {
         if (apiKey == null || apiKey.isEmpty()) {
-            // Using System.err for critical initialization errors, though a proper logger is better in production.
             System.err.println("GeminiLlmServiceImpl: API Key is null or empty. Service will not function.");
+            // Log.e(TAG, "API Key is null or empty. Service will not function.");
             return;
         }
 
@@ -58,6 +63,7 @@ public class GeminiLlmServiceImpl implements LlmService {
     public Call<LlmResponse> generateText(LlmRequest llmRequest) {
         if (generativeModelFutures == null) {
             System.err.println("GeminiLlmServiceImpl: GenerativeModelFutures not initialized (likely due to missing API key).");
+            // Log.e(TAG, "GenerativeModelFutures not initialized (likely due to missing API key).");
             return new Call<LlmResponse>() {
                 @Override
                 public Response<LlmResponse> execute() throws java.io.IOException {
@@ -105,8 +111,8 @@ public class GeminiLlmServiceImpl implements LlmService {
                             TextPart textPart = (TextPart) firstPart;
                             return textPart.getText();
                         } else {
-                             // Log if the part is not a TextPart, for debugging if needed in future.
-                            System.err.println("GeminiLlmServiceImpl: First part is not an instance of TextPart. Actual type: " + firstPart.getClass().getName());
+                            System.err.println("GeminiLlmServiceImpl: First part is not an instance of TextPart. Actual type: " + (firstPart != null ? firstPart.getClass().getName() : "null"));
+                            // Log.e(TAG, "First part is not an instance of TextPart. Actual type: " + (firstPart != null ? firstPart.getClass().getName() : "null"));
                         }
                     }
                 }
@@ -116,6 +122,7 @@ public class GeminiLlmServiceImpl implements LlmService {
 
         @Override
         public Response<T> execute() throws java.io.IOException {
+            // This method is less commonly used for Futures-based APIs in Android, enqueue is preferred.
             try {
                 GenerateContentResponse geminiResponse = future.get();
                 LlmResponse llmResp = new LlmResponse();
@@ -149,11 +156,13 @@ public class GeminiLlmServiceImpl implements LlmService {
                         errorMessage += (finishReason != null ? " | " : " ") + blockReasonText;
                     }
                     llmResp.setError(errorMessage);
-                     System.err.println("GeminiLlmServiceImpl: execute - Error case: " + errorMessage);
+                    System.err.println("GeminiLlmServiceImpl: execute - Error case: " + errorMessage);
+                    // Log.e(TAG, "execute - Error case: " + errorMessage);
                 }
                 return Response.success((T) llmResp);
             } catch (Exception e) {
                 System.err.println("GeminiLlmServiceImpl: execute - Exception: " + e.getMessage());
+                // Log.e(TAG, "execute - Exception: " + e.getMessage(), e);
                 e.printStackTrace();
                 throw new java.io.IOException("Failed to execute Gemini request", e);
             }
@@ -199,6 +208,7 @@ public class GeminiLlmServiceImpl implements LlmService {
                         }
                         llmResp.setError(errorMessage);
                         System.err.println("GeminiLlmServiceImpl: onSuccess - Error case: " + errorMessage);
+                        // Log.e(TAG, "onSuccess - Error case: " + errorMessage);
                         callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp)));
                     }
                 }
@@ -207,19 +217,22 @@ public class GeminiLlmServiceImpl implements LlmService {
                 public void onFailure(Throwable t) {
                     if (cancelled) return;
 
-                    // Log detailed error information
                     if (t != null) {
                         System.err.println("GeminiLlmServiceImpl: Failure from Gemini SDK. Class: " + t.getClass().getName() + ", Message: " + t.getMessage());
-                        t.printStackTrace(); // This should print the full stack trace to System.err
+                        // Log.e(TAG, "Failure from Gemini SDK. Class: " + t.getClass().getName() + ", Message: " + t.getMessage(), t);
+                        t.printStackTrace();
                         Throwable cause = t.getCause();
                         if (cause != null) {
                              System.err.println("GeminiLlmServiceImpl: Caused by: " + cause.getClass().getName() + " - " + cause.getMessage());
+                             // Log.e(TAG, "Caused by: " + cause.getClass().getName() + " - " + cause.getMessage(), cause);
                              cause.printStackTrace();
                         }
                     } else {
                         System.err.println("GeminiLlmServiceImpl: Failure from Gemini SDK: Throwable t is null.");
+                        // Log.e(TAG, "Failure from Gemini SDK: Throwable t is null.");
                     }
-                    callbackExecutor.execute(() -> callback.onFailure(ListenableFutureCall.this, t));
+                    final Throwable finalT = t;
+                    callbackExecutor.execute(() -> callback.onFailure(ListenableFutureCall.this, finalT));
                 }
             }, callbackExecutor);
         }
