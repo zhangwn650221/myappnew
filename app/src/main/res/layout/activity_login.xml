@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp">
+
+    <Button
+        android:id="@+id/buttonWeChatLogin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="微信登录" />
+
+    <Button
+        android:id="@+id/buttonAppleLogin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Apple ID 登录"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/buttonGoogleLogin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Google 登录"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/buttonPhoneLogin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="手机号登录"
+        android:layout_marginTop="16dp" />
+
+</LinearLayout>

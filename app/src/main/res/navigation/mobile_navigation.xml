@@ -19,4 +19,21 @@
         android:name="com.example.myappnew.ui.record.RecordFragment"
         android:label="Record"
         tools:layout="@layout/fragment_record" />
+    <fragment
+        android:id="@+id/navigation_settings"
+        android:name="com.example.myappnew.ui.settings.SettingsFragment"
+        android:label="设置"
+        tools:layout="@layout/fragment_settings" />
+    <fragment
+        android:id="@+id/journalDetailFragment"
+        android:name="com.example.myappnew.ui.journal.JournalDetailFragment"
+        android:label="日记详情"
+        tools:layout="@layout/fragment_journal_detail" >
+        <argument
+            android:name="entry_id"
+            app:argType="integer" />
+    </fragment>
+    <action
+        android:id="@+id/action_navigation_journal_to_journalDetailFragment"
+        app:destination="@id/journalDetailFragment" />
 </navigation>

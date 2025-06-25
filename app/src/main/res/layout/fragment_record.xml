@@ -33,6 +33,30 @@
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
         android:layout_marginBottom="12dp"/>
 
+    <Button
+        android:id="@+id/button_text_record"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="文本记录"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_marginBottom="12dp"/>
+
+    <Button
+        android:id="@+id/button_select_photo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="选择照片"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_marginBottom="12dp"/>
+
+    <Button
+        android:id="@+id/button_record_video"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="录制视频"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_marginBottom="12dp"/>
+
     <ImageView
         android:id="@+id/image_preview"
         android:layout_width="wrap_content"

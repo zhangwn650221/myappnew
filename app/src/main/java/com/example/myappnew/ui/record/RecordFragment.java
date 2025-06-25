@@ -52,6 +52,9 @@ public class RecordFragment extends Fragment {
 
     private Button buttonCaptureImage;
     private Button buttonRecordVoice;
+    private Button buttonTextRecord;
+    private Button buttonSelectPhoto;
+    private Button buttonRecordVideo;
     private TextView textAnalysisResult;
     private TextView textAiSuggestionTitle; // New TextView for the title
     private ImageView imagePreview; // Added for image preview
@@ -158,6 +161,9 @@ public class RecordFragment extends Fragment {
 
         buttonCaptureImage = root.findViewById(R.id.button_capture_image);
         buttonRecordVoice = root.findViewById(R.id.button_record_voice);
+        buttonTextRecord = root.findViewById(R.id.button_text_record);
+        buttonSelectPhoto = root.findViewById(R.id.button_select_photo);
+        buttonRecordVideo = root.findViewById(R.id.button_record_video);
         textAnalysisResult = root.findViewById(R.id.text_analysis_result);
         textAiSuggestionTitle = root.findViewById(R.id.text_ai_suggestion_title);
         imagePreview = root.findViewById(R.id.image_preview); // Initialize ImageView
@@ -188,6 +194,16 @@ public class RecordFragment extends Fragment {
                 Log.d(TAG_DEBUG, "Requesting microphone permission.");
                 requestMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
             }
+        });
+
+        buttonTextRecord.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "文本记录功能开发中...", Toast.LENGTH_SHORT).show();
+        });
+        buttonSelectPhoto.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "选择照片功能开发中...", Toast.LENGTH_SHORT).show();
+        });
+        buttonRecordVideo.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "录制视频功能开发中...", Toast.LENGTH_SHORT).show();
         });
 
         return root;
