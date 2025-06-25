@@ -45,7 +45,20 @@ public class JournalEntryAdapter extends ListAdapter<JournalEntry, JournalEntryA
     public JournalEntryViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View itemView = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.list_item_journal_entry, parent, false);
-        return new JournalEntryViewHolder(itemView);
+        JournalEntryViewHolder holder = new JournalEntryViewHolder(itemView);
+        itemView.setOnClickListener(v -> {
+            int position = holder.getAdapterPosition();
+            if (position != RecyclerView.NO_POSITION) {
+                JournalEntry entry = getItem(position);
+                // 跳转到详情页
+                android.os.Bundle args = new android.os.Bundle();
+                args.putInt("entry_id", entry.getId());
+                androidx.navigation.Navigation.findNavController(itemView).navigate(
+                    R.id.action_navigation_journal_to_journalDetailFragment, args
+                );
+            }
+        });
+        return holder;
     }
 
     @Override
@@ -53,16 +66,29 @@ public class JournalEntryAdapter extends ListAdapter<JournalEntry, JournalEntryA
         JournalEntry currentEntry = getItem(position);
         holder.textContent.setText(currentEntry.getContent());
         holder.textTimestamp.setText(sdf.format(currentEntry.getDate()));
+        // 多模态内容标记
+        StringBuilder multimodal = new StringBuilder();
+        if (currentEntry.getImageUri() != null && !currentEntry.getImageUri().isEmpty()) multimodal.append("[图片] ");
+        if (currentEntry.getAudioUri() != null && !currentEntry.getAudioUri().isEmpty()) multimodal.append("[语音] ");
+        if (currentEntry.getVideoUri() != null && !currentEntry.getVideoUri().isEmpty()) multimodal.append("[视频] ");
+        if (multimodal.length() > 0) {
+            holder.textMultimodal.setText(multimodal.toString().trim());
+            holder.textMultimodal.setVisibility(View.VISIBLE);
+        } else {
+            holder.textMultimodal.setVisibility(View.GONE);
+        }
     }
 
     static class JournalEntryViewHolder extends RecyclerView.ViewHolder {
         private final TextView textContent;
         private final TextView textTimestamp;
+        private final TextView textMultimodal;
 
         public JournalEntryViewHolder(@NonNull View itemView) {
             super(itemView);
             textContent = itemView.findViewById(R.id.text_journal_content);
             textTimestamp = itemView.findViewById(R.id.text_journal_timestamp);
+            textMultimodal = itemView.findViewById(R.id.text_journal_multimodal);
         }
     }
 }

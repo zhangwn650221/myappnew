@@ -21,4 +21,14 @@
         android:textSize="12sp"
         android:layout_marginTop="4dp"
         android:text="Timestamp"/>
+
+    <TextView
+        android:id="@+id/text_journal_multimodal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+        android:textSize="12sp"
+        android:layout_marginTop="2dp"
+        android:text="[多模态内容]"
+        android:visibility="gone"/>
 </LinearLayout>

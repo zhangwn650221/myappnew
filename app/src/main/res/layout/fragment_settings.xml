@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <EditText
+        android:id="@+id/editTextApiKey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="请输入您的大模型API Key"
+        android:inputType="textPassword"
+        android:importantForAutofill="yes" />
+
+    <Button
+        android:id="@+id/buttonSaveApiKey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="保存API Key"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/buttonExportData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="数据导出"
+        android:layout_marginTop="24dp" />
+
+    <Button
+        android:id="@+id/buttonLogout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="账户注销"
+        android:layout_marginTop="16dp" />
+
+    <!-- 可扩展：其他设置选项 -->
+
+</LinearLayout>
