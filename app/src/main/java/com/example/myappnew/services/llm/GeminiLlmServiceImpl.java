@@ -1,6 +1,5 @@
 package com.example.myappnew.services.llm;
 
-// import com.example.myappnew.BuildConfig; // Not strictly needed for this snippet if API key is passed directly
 import com.google.ai.client.generativeai.GenerativeModel;
 import com.google.ai.client.generativeai.java.GenerativeModelFutures;
 import com.google.ai.client.generativeai.type.BlockThreshold;
@@ -10,17 +9,21 @@ import com.google.ai.client.generativeai.type.FinishReason;
 import com.google.ai.client.generativeai.type.GenerateContentResponse;
 import com.google.ai.client.generativeai.type.GenerationConfig;
 import com.google.ai.client.generativeai.type.HarmCategory;
-import com.google.ai.client.generativeai.type.Part; 
+import com.google.ai.client.generativeai.type.Part;
 import com.google.ai.client.generativeai.type.PromptFeedback;
 import com.google.ai.client.generativeai.type.SafetySetting;
+import com.google.ai.client.generativeai.type.TextPart;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Collections;
-import java.util.List; 
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
+// Consider using Android's Log class for better log management in production apps.
+// import android.util.Log;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -28,34 +31,39 @@ import retrofit2.Response;
 
 public class GeminiLlmServiceImpl implements LlmService {
 
+    // private static final String TAG = "GeminiLlmServiceImpl"; // For Log.d/e
+
     private GenerativeModelFutures generativeModelFutures;
     private final Executor mainExecutor = Executors.newSingleThreadExecutor();
 
     public GeminiLlmServiceImpl(String apiKey) {
         if (apiKey == null || apiKey.isEmpty()) {
-            System.err.println("GEMINI_DEBUG: GeminiLlmServiceImpl - API Key is null or empty. Service will not function.");
+            System.err.println("GeminiLlmServiceImpl: API Key is null or empty. Service will not function.");
+            // Log.e(TAG, "API Key is null or empty. Service will not function.");
             return;
         }
-        System.out.println("GEMINI_DEBUG: GeminiLlmServiceImpl - Initializing with API Key.");
 
         GenerationConfig generationConfig = new GenerationConfig.Builder().build();
         SafetySetting harassmentSafety = new SafetySetting(HarmCategory.HARASSMENT, BlockThreshold.MEDIUM_AND_ABOVE);
+        // Consider adding other safety settings like HATE_SPEECH, SEXUALLY_EXPLICIT, DANGEROUS_CONTENT
+        // Example: 
+        // SafetySetting hateSpeechSafety = new SafetySetting(HarmCategory.HATE_SPEECH, BlockThreshold.MEDIUM_AND_ABOVE);
+        // List<SafetySetting> safetySettings = Arrays.asList(harassmentSafety, hateSpeechSafety);
 
         GenerativeModel gm = new GenerativeModel(
-                "gemini-1.5-flash-latest",
+                "gemini-1.5-flash-latest", // Or "gemini-pro" or other applicable models
                 apiKey,
                 generationConfig,
-                Collections.singletonList(harassmentSafety)
+                Collections.singletonList(harassmentSafety) // Replace with 'safetySettings' if using multiple
         );
         this.generativeModelFutures = GenerativeModelFutures.from(gm);
-        System.out.println("GEMINI_DEBUG: GeminiLlmServiceImpl - GenerativeModelFutures initialized.");
     }
 
     @Override
     public Call<LlmResponse> generateText(LlmRequest llmRequest) {
-        System.out.println("GEMINI_DEBUG: generateText called.");
         if (generativeModelFutures == null) {
-            System.err.println("GEMINI_DEBUG: generateText - GenerativeModelFutures not initialized.");
+            System.err.println("GeminiLlmServiceImpl: GenerativeModelFutures not initialized (likely due to missing API key).");
+            // Log.e(TAG, "GenerativeModelFutures not initialized (likely due to missing API key).");
             return new Call<LlmResponse>() {
                 @Override
                 public Response<LlmResponse> execute() throws java.io.IOException {
@@ -77,10 +85,8 @@ public class GeminiLlmServiceImpl implements LlmService {
         Content content = new Content.Builder()
                 .addText(llmRequest.getPrompt())
                 .build();
-        System.out.println("GEMINI_DEBUG: generateText - Content built for prompt: " + llmRequest.getPrompt());
 
         ListenableFuture<GenerateContentResponse> future = generativeModelFutures.generateContent(content);
-        System.out.println("GEMINI_DEBUG: generateText - generateContent future created.");
         return new ListenableFutureCall<>(future, mainExecutor);
     }
 
@@ -95,21 +101,18 @@ public class GeminiLlmServiceImpl implements LlmService {
         }
 
         private String extractTextFromCandidate(Candidate candidate) {
-            System.out.println("GEMINI_DEBUG: extractTextFromCandidate called. Candidate is " + (candidate == null ? "null" : "not null"));
             if (candidate != null) {
                 Content content = candidate.getContent();
-                System.out.println("GEMINI_DEBUG: Content object is " + (content == null ? "null" : "not null"));
                 if (content != null) {
-                    List<Part> parts = content.getParts(); 
-                    System.out.println("GEMINI_DEBUG: Parts list is " + (parts == null ? "null" : (parts.isEmpty() ? "empty" : "not empty (" + parts.size() + " parts)")));
+                    List<Part> parts = content.getParts();
                     if (parts != null && !parts.isEmpty()) {
                         Part firstPart = parts.get(0);
-                        System.out.println("GEMINI_DEBUG: firstPart object is " + (firstPart == null ? "null" : "not null"));
-                        if (firstPart != null) {
-                            System.out.println("GEMINI_DEBUG: firstPart actual class: " + firstPart.getClass().getName());
-                            System.out.println("GEMINI_DEBUG: firstPart.toString(): " + firstPart.toString());
-                            // Actual text extraction from Part to be determined based on its class and available methods
-                            // For now, this method will return null to focus on logging.
+                        if (firstPart instanceof TextPart) {
+                            TextPart textPart = (TextPart) firstPart;
+                            return textPart.getText();
+                        } else {
+                             System.err.println("GeminiLlmServiceImpl: First part is not an instance of TextPart. Actual type: " + (firstPart != null ? firstPart.getClass().getName() : "null"));
+                            // Log.e(TAG, "First part is not an instance of TextPart. Actual type: " + (firstPart != null ? firstPart.getClass().getName() : "null"));
                         }
                     }
                 }
@@ -119,10 +122,9 @@ public class GeminiLlmServiceImpl implements LlmService {
 
         @Override
         public Response<T> execute() throws java.io.IOException {
-            System.out.println("GEMINI_DEBUG: execute called.");
+            // This method is less commonly used for Futures-based APIs in Android, enqueue is preferred.
             try {
-                GenerateContentResponse geminiResponse = future.get();
-                System.out.println("GEMINI_DEBUG: execute - geminiResponse is " + (geminiResponse == null ? "null" : "not null"));
+                GenerateContentResponse geminiResponse = future.get(); 
                 LlmResponse llmResp = new LlmResponse();
                 String extractedText = null;
                 FinishReason finishReason = null;
@@ -130,7 +132,6 @@ public class GeminiLlmServiceImpl implements LlmService {
 
                 if (geminiResponse != null && geminiResponse.getCandidates() != null && !geminiResponse.getCandidates().isEmpty()) {
                     Candidate candidate = geminiResponse.getCandidates().get(0);
-                    System.out.println("GEMINI_DEBUG: execute - Candidate is " + (candidate == null ? "null" : "not null"));
                     if (candidate != null) {
                         finishReason = candidate.getFinishReason();
                         extractedText = extractTextFromCandidate(candidate);
@@ -143,8 +144,8 @@ public class GeminiLlmServiceImpl implements LlmService {
                          blockReasonText = "Prompt Feedback Block Reason: " + promptFeedback.getBlockReason().toString();
                     }
                 }
-                System.out.println("GEMINI_DEBUG: execute - Extracted text: " + extractedText);
-                if (extractedText != null) {
+
+                if (extractedText != null && !extractedText.isEmpty()) {
                     llmResp.setGeneratedText(extractedText);
                 } else {
                     String errorMessage = "Gemini response content is null or empty.";
@@ -155,11 +156,13 @@ public class GeminiLlmServiceImpl implements LlmService {
                         errorMessage += (finishReason != null ? " | " : " ") + blockReasonText;
                     }
                     llmResp.setError(errorMessage);
-                    System.err.println("GEMINI_DEBUG: execute - Error case: " + errorMessage);
+                     System.err.println("GeminiLlmServiceImpl: execute - Error case: " + errorMessage);
+                    // Log.e(TAG, "execute - Error case: " + errorMessage);
                 }
                 return Response.success((T) llmResp);
             } catch (Exception e) {
-                System.err.println("GEMINI_DEBUG: execute - Exception: " + e.getMessage());
+                System.err.println("GeminiLlmServiceImpl: execute - Exception: " + e.getMessage());
+                // Log.e(TAG, "execute - Exception: " + e.getMessage(), e);
                 e.printStackTrace();
                 throw new java.io.IOException("Failed to execute Gemini request", e);
             }
@@ -167,13 +170,10 @@ public class GeminiLlmServiceImpl implements LlmService {
 
         @Override
         public void enqueue(Callback<T> callback) {
-            System.out.println("GEMINI_DEBUG: enqueue called. Future is: " + (future == null ? "null" : "not null"));
             Futures.addCallback(future, new FutureCallback<GenerateContentResponse>() {
                 @Override
                 public void onSuccess(GenerateContentResponse geminiResponse) {
-                    System.out.println("GEMINI_DEBUG: onSuccess triggered. Cancelled: " + cancelled);
                     if (cancelled) return;
-                    System.out.println("GEMINI_DEBUG: onSuccess - geminiResponse is " + (geminiResponse == null ? "null" : "not null"));
 
                     LlmResponse llmResp = new LlmResponse();
                     String extractedText = null;
@@ -182,7 +182,6 @@ public class GeminiLlmServiceImpl implements LlmService {
 
                     if (geminiResponse != null && geminiResponse.getCandidates() != null && !geminiResponse.getCandidates().isEmpty()) {
                         Candidate candidate = geminiResponse.getCandidates().get(0);
-                        System.out.println("GEMINI_DEBUG: onSuccess - Candidate is " + (candidate == null ? "null" : "not null"));
                         if (candidate != null) {
                             finishReason = candidate.getFinishReason();
                             extractedText = extractTextFromCandidate(candidate);
@@ -195,8 +194,8 @@ public class GeminiLlmServiceImpl implements LlmService {
                             blockReasonText = "Prompt Feedback Block Reason: " + promptFeedback.getBlockReason().toString();
                         }
                     }
-                    System.out.println("GEMINI_DEBUG: onSuccess - Extracted text: " + extractedText);
-                    if (extractedText != null) {
+
+                    if (extractedText != null && !extractedText.isEmpty()) {
                         llmResp.setGeneratedText(extractedText);
                         callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp)));
                     } else {
@@ -208,32 +207,30 @@ public class GeminiLlmServiceImpl implements LlmService {
                             errorMessage += (finishReason != null ? " | " : " ") + blockReasonText;
                         }
                         llmResp.setError(errorMessage);
-                        System.err.println("GEMINI_DEBUG: onSuccess - Error case: " + errorMessage);
+                        System.err.println("GeminiLlmServiceImpl: onSuccess - Error case: " + errorMessage);
+                        // Log.e(TAG, "onSuccess - Error case: " + errorMessage);
                         callbackExecutor.execute(() -> callback.onResponse(ListenableFutureCall.this, Response.success((T) llmResp)));
                     }
                 }
 
                 @Override
                 public void onFailure(Throwable t) {
-                    System.err.println("GEMINI_DEBUG: onFailure CALLED. Cancelled: " + cancelled);
-                    if (cancelled) {
-                        System.err.println("GEMINI_DEBUG: Call was cancelled, returning.");
-                        return;
-                    }
-
-                    if (t == null) {
-                        System.err.println("GEMINI_DEBUG: Throwable t IS NULL.");
-                    } else {
-                        System.err.println("GEMINI_DEBUG: Throwable t is NOT NULL. Class: " + t.getClass().getName() + ", Message: " + t.getMessage());
-                        System.err.println("GEMINI_DEBUG: Attempting t.printStackTrace()...");
-                        try {
-                            t.printStackTrace(); // Directly invokes printStackTrace on the System.err stream
-                            System.err.println("GEMINI_DEBUG: t.printStackTrace() CALLED SUCCESSFULLY (check for subsequent stack trace lines).");
-                        } catch (Exception e_printStackTrace) {
-                            System.err.println("GEMINI_DEBUG: EXCEPTION DURING t.printStackTrace(): " + e_printStackTrace.getMessage());
+                    if (cancelled) return;
+                    
+                    if (t != null) {
+                        System.err.println("GeminiLlmServiceImpl: Failure from Gemini SDK. Class: " + t.getClass().getName() + ", Message: " + t.getMessage());
+                        // Log.e(TAG, "Failure from Gemini SDK. Class: " + t.getClass().getName() + ", Message: " + t.getMessage(), t);
+                        t.printStackTrace(); 
+                        Throwable cause = t.getCause();
+                        if (cause != null) {
+                             System.err.println("GeminiLlmServiceImpl: Caused by: " + cause.getClass().getName() + " - " + cause.getMessage());
+                             // Log.e(TAG, "Caused by: " + cause.getClass().getName() + " - " + cause.getMessage(), cause);
+                             cause.printStackTrace();
                         }
+                    } else {
+                        System.err.println("GeminiLlmServiceImpl: Failure from Gemini SDK: Throwable t is null.");
+                        // Log.e(TAG, "Failure from Gemini SDK: Throwable t is null.");
                     }
-
                     final Throwable finalT = t; 
                     callbackExecutor.execute(() -> callback.onFailure(ListenableFutureCall.this, finalT));
                 }
