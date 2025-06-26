@@ -1,7 +1,13 @@
 package com.example.myappnew.ui.chat;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.method.ScrollingMovementMethod;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,11 +21,20 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.myappnew.R;
-import com.example.myappnew.services.websocket.ChatWebSocketClient;
-import com.example.myappnew.services.websocket.WebSocketListenerCallback;
+import com.example.myappnew.modelprovider.GeminiProvider;
+
+import org.json.JSONObject;
+import java.io.IOException;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
- * Fragment for displaying the chat interface and handling WebSocket communication.
+ * Fragment for displaying the chat interface and handling communication with the Gemini API.
  *
  * ---
  * <h4>Testing Strategy (Integration/UI Tests - Espresso):</h4>
@@ -35,134 +50,127 @@ import com.example.myappnew.services.websocket.WebSocketListenerCallback;
  *             <li>After sending a message, verify it (or an echo from a test server/mocked callback) appears in the messages TextView.</li>
  *         </ul>
  *     </li>
- *     <li>Mock <code>ChatWebSocketClient</code> or its callback to simulate connection states (open, message received, closed, failure) and verify UI updates accordingly (e.g., send button enabled/disabled, status messages shown).</li>
- *     <li>Test fragment lifecycle integration: WebSocket connection in <code>onViewCreated</code>, disconnection in <code>onDestroyView</code>.</li>
- *     <li>Consider using Espresso's IdlingResource for WebSocket asynchronous operations if not using mock callbacks directly.</li>
+ *     <li>Mock Gemini API responses to test various scenarios (successful response, error response, etc.) and verify UI updates accordingly.</li>
+ *     <li>Test fragment lifecycle integration: API request in <code>onViewCreated</code>, cleanup in <code>onDestroyView</code>.</li>
+ *     <li>Consider using Espresso's IdlingResource for API asynchronous operations if not using mock responses directly.</li>
  * </ul>
  * ---
  */
-public class ChatFragment extends Fragment implements WebSocketListenerCallback {
-
+public class ChatFragment extends Fragment {
     private EditText editChatMessage;
     private Button buttonSendMessage;
     private TextView textChatMessages;
-
-    private ChatWebSocketClient webSocketClient;
-    // Using a public test WebSocket server
-    private static final String WEB_SOCKET_URL = "wss://echo.websocket.org";
-
+    private GeminiProvider geminiProvider;
+    private String apiKey;
+    private String geminiVersion;
+    private OkHttpClient httpClient = new OkHttpClient();
+    private static final String PREFS_NAME = "user_settings";
+    private static final String KEY_API = "user_api_key";
+    private static final String KEY_GEMINI_VERSION = "gemini_version";
+    private static final String[] GEMINI_VERSION_ARRAY = {
+        "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-pro", "gemini-2.5-pro"
+    };
+    private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_chat, container, false);
-
         editChatMessage = root.findViewById(R.id.edit_chat_message);
         buttonSendMessage = root.findViewById(R.id.button_send_message);
         textChatMessages = root.findViewById(R.id.text_chat_messages);
-        textChatMessages.setMovementMethod(new ScrollingMovementMethod()); // Enable scrolling
-        buttonSendMessage.setEnabled(false); // Initially disable until connection is open
+        textChatMessages.setMovementMethod(new ScrollingMovementMethod());
+        buttonSendMessage.setEnabled(true);
 
+        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        apiKey = prefs.getString(KEY_API, "");
+        int geminiVersionIdx = prefs.getInt(KEY_GEMINI_VERSION, 0);
+        geminiVersion = GEMINI_VERSION_ARRAY[Math.max(0, Math.min(geminiVersionIdx, GEMINI_VERSION_ARRAY.length-1))];
+        geminiProvider = new GeminiProvider();
+        geminiProvider.setModelVersion(geminiVersion);
 
         buttonSendMessage.setOnClickListener(v -> {
             String message = editChatMessage.getText().toString().trim();
-            if (!message.isEmpty() && webSocketClient != null) {
-                if (webSocketClient.sendMessage(message)) {
-                    // Optionally clear input after sending, or wait for echo
-                    // editChatMessage.setText("");
-                } else {
-                    showToast("Failed to send. WebSocket not connected.");
-                }
-            } else if (message.isEmpty()) {
-                showToast("Message cannot be empty.");
+            if (!message.isEmpty()) {
+                appendMessageToView(message, true);
+                sendGeminiRequest(message);
             } else {
-                 showToast("WebSocket client not initialized.");
+                showToast("Message cannot be empty.");
             }
         });
-
         return root;
     }
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        // Initialize and connect WebSocket client
-        // Ensure this URL is accessible from the environment.
-        webSocketClient = new ChatWebSocketClient(WEB_SOCKET_URL, this);
-        appendMessageToView("Connecting to " + WEB_SOCKET_URL + "...");
-        webSocketClient.connect();
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        if (webSocketClient != null) {
-            appendMessageToView("Disconnecting...");
-            webSocketClient.disconnect();
-        }
-        // Consider calling webSocketClient.shutdown() if this is the absolute end of the app,
-        // but usually not needed for fragment lifecycle.
-    }
-
-    // WebSocketListenerCallback methods
-    @Override
-    public void onOpen() {
-        if (isAdded() && getActivity() != null) {
-            getActivity().runOnUiThread(() -> {
-                appendMessageToView("Status: Connected");
-                showToast("WebSocket Connected!");
-                buttonSendMessage.setEnabled(true); // Enable send button
-            });
-        }
-    }
-
-    @Override
-    public void onMessage(String text) {
-         if (isAdded() && getActivity() != null) {
-            getActivity().runOnUiThread(() -> {
-                appendMessageToView("Received: " + text);
-                // If the sent message was not cleared, and this is an echo server,
-                // we might want to clear it now if it matches the sent message.
-                if (editChatMessage.getText().toString().equals(text)) {
+    private void sendGeminiRequest(String userInput) {
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + geminiVersion + ":generateContent?key=" + apiKey;
+        String jsonBody = geminiProvider.buildRequestMessage(userInput);
+        RequestBody body = RequestBody.create(jsonBody, JSON);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                if (getActivity() != null) getActivity().runOnUiThread(() -> showToast("请求失败: " + e.getMessage()));
+            }
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String resp = response.body() != null ? response.body().string() : "";
+                if (getActivity() != null) getActivity().runOnUiThread(() -> {
+                    String modelReply = extractGeminiReply(resp);
+                    appendMessageToView(modelReply, false);
                     editChatMessage.setText("");
-                }
-            });
-        }
+                });
+            }
+        });
     }
 
-    @Override
-    public void onClosing(int code, String reason) {
-        if (isAdded() && getActivity() != null) {
-            getActivity().runOnUiThread(() -> {
-                appendMessageToView("Status: Closing - " + code + " / " + reason);
-                buttonSendMessage.setEnabled(false);
-            });
+    private void appendMessageToView(String message, boolean isUser) {
+        SpannableString span;
+        if (isUser) {
+            span = new SpannableString("我: " + message + "\n");
+            span.setSpan(new ForegroundColorSpan(0xFF1976D2), 0, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        } else {
+            span = new SpannableString("Gemini: " + message + "\n");
+            span.setSpan(new ForegroundColorSpan(0xFF388E3C), 0, 7, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, 7, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+        textChatMessages.append(span);
     }
-
-    @Override
-    public void onFailure(Throwable t, okhttp3.Response response) {
-        if (isAdded() && getActivity() != null) {
-            getActivity().runOnUiThread(() -> {
-                String errorMsg = "Status: Connection Failed - " + t.getMessage();
-                appendMessageToView(errorMsg);
-                showToast(errorMsg);
-                buttonSendMessage.setEnabled(false);
-                if (response != null) {
-                     appendMessageToView("Failure Response: Code=" + response.code() + ", Message=" + response.message());
-                }
-            });
-        }
-    }
-
     private void appendMessageToView(String message) {
-        // Ensure UI updates are on the main thread (already handled by runOnUiThread in callbacks)
-        textChatMessages.append(message + "\n");
+        appendMessageToView(message, false);
     }
-
     private void showToast(String message) {
         if (getContext() != null) {
             Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         }
+    }
+    private String extractGeminiReply(String json) {
+        try {
+            JSONObject obj = new JSONObject(json);
+            if (obj.has("candidates")) {
+                org.json.JSONArray candidates = obj.getJSONArray("candidates");
+                if (candidates.length() > 0) {
+                    JSONObject first = candidates.getJSONObject(0);
+                    if (first.has("content")) {
+                        JSONObject content = first.getJSONObject("content");
+                        if (content.has("parts")) {
+                            org.json.JSONArray parts = content.getJSONArray("parts");
+                            if (parts.length() > 0) {
+                                JSONObject part = parts.getJSONObject(0);
+                                if (part.has("text")) {
+                                    return part.getString("text");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return json;
+        }
+        return json;
     }
 }

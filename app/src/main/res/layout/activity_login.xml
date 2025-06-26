@@ -13,6 +13,15 @@
         android:layout_marginBottom="16dp"
         android:entries="@array/model_type_array" />
 
+    <!-- Gemini 版本选择，仅在选择 Gemini 时显示 -->
+    <Spinner
+        android:id="@+id/spinnerGeminiVersion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:entries="@array/gemini_version_array"
+        android:visibility="gone" />
+
     <EditText
         android:id="@+id/editTextApiKey"
         android:layout_width="match_parent"

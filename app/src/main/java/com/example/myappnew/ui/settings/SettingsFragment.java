@@ -25,9 +25,11 @@ public class SettingsFragment extends Fragment {
     private Button exportDataButton;
     private Button logoutButton;
     private Spinner modelTypeSpinner;
+    private Spinner geminiVersionSpinner;
     private static final String PREFS_NAME = "user_settings";
     private static final String KEY_API = "user_api_key";
     private static final String KEY_MODEL_TYPE = "model_type";
+    private static final String KEY_GEMINI_VERSION = "gemini_version";
 
     @Nullable
     @Override
@@ -38,6 +40,7 @@ public class SettingsFragment extends Fragment {
         exportDataButton = view.findViewById(R.id.buttonExportData);
         logoutButton = view.findViewById(R.id.buttonLogout);
         modelTypeSpinner = view.findViewById(R.id.spinnerModelType);
+        geminiVersionSpinner = view.findViewById(R.id.spinnerGeminiVersion);
 
         SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
@@ -48,10 +51,30 @@ public class SettingsFragment extends Fragment {
         // 加载已保存的大模型类型
         int savedModelType = prefs.getInt(KEY_MODEL_TYPE, 0);
         modelTypeSpinner.setSelection(savedModelType);
+
+        // 加载已保存的Gemini版本
+        int savedGeminiVersion = prefs.getInt(KEY_GEMINI_VERSION, 0);
+        geminiVersionSpinner.setSelection(savedGeminiVersion);
+
+        geminiVersionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.edit().putInt(KEY_GEMINI_VERSION, position).apply();
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
         modelTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 prefs.edit().putInt(KEY_MODEL_TYPE, position).apply();
+                String[] modelTypes = getResources().getStringArray(R.array.model_type_array);
+                if (modelTypes[position].equals("Gemini")) {
+                    geminiVersionSpinner.setVisibility(View.VISIBLE);
+                } else {
+                    geminiVersionSpinner.setVisibility(View.GONE);
+                }
             }
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
