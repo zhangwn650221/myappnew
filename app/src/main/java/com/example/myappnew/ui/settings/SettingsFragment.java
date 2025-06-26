@@ -10,6 +10,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.widget.Spinner;
+import android.widget.AdapterView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,8 +24,10 @@ public class SettingsFragment extends Fragment {
     private Button saveButton;
     private Button exportDataButton;
     private Button logoutButton;
+    private Spinner modelTypeSpinner;
     private static final String PREFS_NAME = "user_settings";
     private static final String KEY_API = "user_api_key";
+    private static final String KEY_MODEL_TYPE = "model_type";
 
     @Nullable
     @Override
@@ -33,11 +37,25 @@ public class SettingsFragment extends Fragment {
         saveButton = view.findViewById(R.id.buttonSaveApiKey);
         exportDataButton = view.findViewById(R.id.buttonExportData);
         logoutButton = view.findViewById(R.id.buttonLogout);
+        modelTypeSpinner = view.findViewById(R.id.spinnerModelType);
+
+        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
         // 加载已保存的API Key
-        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String savedKey = prefs.getString(KEY_API, "");
         apiKeyEditText.setText(savedKey);
+
+        // 加载已保存的大模型类型
+        int savedModelType = prefs.getInt(KEY_MODEL_TYPE, 0);
+        modelTypeSpinner.setSelection(savedModelType);
+        modelTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.edit().putInt(KEY_MODEL_TYPE, position).apply();
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
 
         saveButton.setOnClickListener(v -> {
             String apiKey = apiKeyEditText.getText().toString().trim();

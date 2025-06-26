@@ -1,0 +1,7 @@
+<resources>
+    <string-array name="model_type_array">
+        <item>OpenAI</item>
+        <item>Gemini</item>
+        <item>讯飞</item>
+    </string-array>
+</resources>

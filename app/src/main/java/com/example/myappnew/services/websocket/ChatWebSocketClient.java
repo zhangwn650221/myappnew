@@ -3,6 +3,8 @@ package com.example.myappnew.services.websocket;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.concurrent.TimeUnit;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -32,7 +34,11 @@ public class ChatWebSocketClient {
     private String serverUrl;
 
     public ChatWebSocketClient(String serverUrl, WebSocketListenerCallback listenerCallback) {
-        this.client = new OkHttpClient();
+        this.client = new OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build();
         this.serverUrl = serverUrl;
         this.listenerCallback = listenerCallback;
     }
