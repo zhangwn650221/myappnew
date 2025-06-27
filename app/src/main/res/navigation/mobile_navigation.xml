@@ -2,13 +2,39 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@id/navigation_chat">
+    app:startDestination="@id/mainMenuFragment">
+
+    <fragment
+        android:id="@+id/mainMenuFragment"
+        android:name="com.example.myappnew.ui.mainmenu.MainMenuFragment"
+        android:label="主菜单"
+        tools:layout="@layout/fragment_main_menu">
+        <action
+            android:id="@+id/action_mainMenu_to_chatFragment"
+            app:destination="@id/navigation_chat" />
+        <action
+            android:id="@+id/action_mainMenu_to_voiceChatFragment"
+            app:destination="@id/voiceChatFragment" />
+        <action
+            android:id="@+id/action_mainMenu_to_videoChatFragment"
+            app:destination="@id/videoChatFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_chat"
         android:name="com.example.myappnew.ui.chat.ChatFragment"
         android:label="Chat"
         tools:layout="@layout/fragment_chat" />
+    <fragment
+        android:id="@+id/voiceChatFragment"
+        android:name="com.example.myappnew.ui.voice.VoiceChatFragment"
+        android:label="语音聊天"
+        tools:layout="@layout/fragment_voice_chat" />
+    <fragment
+        android:id="@+id/videoChatFragment"
+        android:name="com.example.myappnew.ui.video.VideoChatFragment"
+        android:label="视频聊天"
+        tools:layout="@layout/fragment_video_chat" />
     <fragment
         android:id="@+id/navigation_journal"
         android:name="com.example.myappnew.ui.journal.JournalFragment"
