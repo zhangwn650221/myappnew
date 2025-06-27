@@ -1,5 +1,4 @@
 <resources>
     <string name="app_name">My Appnew</string>
-    <!-- 允许所有字符（含中文、标点、emoji等） -->
-    <string name="allow_all_chars">ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789一二三四五六七八九零壹贰叁肆伍陆柒捌玖〇·，。！？；：、（）“”‘’—…【】《》〈〉·~!@#$%^&amp;*()_+-=\|[]{};:'",.<>/?`～！￥……（）——【】『』「」《》、··</string>
+    <!-- 已移除 allow_all_chars，避免非法字符导致资源编译失败 -->
 </resources>

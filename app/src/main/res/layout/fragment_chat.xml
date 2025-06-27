@@ -34,12 +34,11 @@
             android:paddingRight="12dp"
             android:fontFamily="sans-serif"
             android:gravity="center_vertical"
-            android:inputType="textMultiLine|textCapSentences|textImeMultiLine|textVisiblePassword"
+            android:inputType="textMultiLine|textCapSentences|textImeMultiLine"
             android:maxLines="5"
             android:scrollHorizontally="false"
             android:imeOptions="actionSend"
-            android:singleLine="false"
-            android:digits="@string/allow_all_chars" />
+            android:singleLine="false" />
 
         <Button
             android:id="@+id/button_send_message"
@@ -60,7 +59,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="设定AI角色/功能（如：你是专业AI助手）"
-        android:inputType="textMultiLine|textCapSentences|textImeMultiLine|textVisiblePassword"
+        android:inputType="textMultiLine|textCapSentences|textImeMultiLine"
         android:background="@android:color/transparent"
         android:textColorHint="#888"
         android:padding="12dp"
@@ -72,8 +71,7 @@
         android:visibility="visible"
         android:fontFamily="sans-serif"
         android:imeOptions="actionDone"
-        android:singleLine="false"
-        android:digits="@string/allow_all_chars" />
+        android:singleLine="false" />
 
     <!-- 输出框（大模型回复，置底） -->
     <ScrollView
