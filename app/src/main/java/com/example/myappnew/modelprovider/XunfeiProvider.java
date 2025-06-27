@@ -26,7 +26,22 @@ public class XunfeiProvider implements ModelProvider {
 
     @Override
     public String buildRequestMessage(String userInput) {
-        // 示例：实际应按讯飞协议构造 JSON
-        return "{\"text\":\"" + userInput + "\"}";
+        return buildRequestMessage(userInput, null);
+    }
+
+    @Override
+    public String buildRequestMessage(String userInput, String systemPrompt) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        if (systemPrompt != null && !systemPrompt.isEmpty()) {
+            sb.append("\"system\":\"")
+              .append(systemPrompt.replace("\"", "\\\""))
+              .append("\",");
+        }
+        sb.append("\"text\":\"")
+          .append(userInput.replace("\"", "\\\""))
+          .append("\"");
+        sb.append("}");
+        return sb.toString();
     }
 }

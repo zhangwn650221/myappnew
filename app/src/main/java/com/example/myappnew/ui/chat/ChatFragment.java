@@ -25,6 +25,8 @@ import com.example.myappnew.modelprovider.GeminiProvider;
 
 import org.json.JSONObject;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -59,7 +61,9 @@ import okhttp3.Response;
 public class ChatFragment extends Fragment {
     private EditText editChatMessage;
     private Button buttonSendMessage;
-    private TextView textChatMessages;
+    private TextView textChatOutput;
+    private EditText editChatPrompt;
+    private static final String KEY_CHAT_PROMPT = "chat_prompt";
     private GeminiProvider geminiProvider;
     private String apiKey;
     private String geminiVersion;
@@ -71,6 +75,8 @@ public class ChatFragment extends Fragment {
         "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-pro", "gemini-2.5-pro"
     };
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    private List<String> chatHistory = new LinkedList<>();
+    private static final int HISTORY_ANALYZE_WINDOW = 5;
 
     @Nullable
     @Override
@@ -78,11 +84,21 @@ public class ChatFragment extends Fragment {
         View root = inflater.inflate(R.layout.fragment_chat, container, false);
         editChatMessage = root.findViewById(R.id.edit_chat_message);
         buttonSendMessage = root.findViewById(R.id.button_send_message);
-        textChatMessages = root.findViewById(R.id.text_chat_messages);
-        textChatMessages.setMovementMethod(new ScrollingMovementMethod());
-        buttonSendMessage.setEnabled(true);
-
+        textChatOutput = root.findViewById(R.id.text_chat_output);
+        editChatPrompt = root.findViewById(R.id.edit_chat_prompt);
+        // 读取已保存的 prompt 或用默认
+        String defaultPrompt = "你是专业AI助手，善于理解和帮助用户。";
         SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String savedPrompt = prefs.getString(KEY_CHAT_PROMPT, defaultPrompt);
+        editChatPrompt.setText(savedPrompt);
+        editChatPrompt.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                String prompt = editChatPrompt.getText().toString().trim();
+                prefs.edit().putString(KEY_CHAT_PROMPT, prompt).apply();
+            }
+        });
+
+        // 不要重复声明 prefs，后续直接复用
         apiKey = prefs.getString(KEY_API, "");
         int geminiVersionIdx = prefs.getInt(KEY_GEMINI_VERSION, 0);
         geminiVersion = GEMINI_VERSION_ARRAY[Math.max(0, Math.min(geminiVersionIdx, GEMINI_VERSION_ARRAY.length-1))];
@@ -91,9 +107,10 @@ public class ChatFragment extends Fragment {
 
         buttonSendMessage.setOnClickListener(v -> {
             String message = editChatMessage.getText().toString().trim();
+            String prompt = editChatPrompt.getText().toString().trim();
             if (!message.isEmpty()) {
-                appendMessageToView(message, true);
-                sendGeminiRequest(message);
+                // 只显示用户输入在输入框，不再追加到输出区
+                sendGeminiRequest(message, prompt);
             } else {
                 showToast("Message cannot be empty.");
             }
@@ -101,9 +118,9 @@ public class ChatFragment extends Fragment {
         return root;
     }
 
-    private void sendGeminiRequest(String userInput) {
+    private void sendGeminiRequest(String userInput, String systemPrompt) {
         String url = "https://generativelanguage.googleapis.com/v1beta/models/" + geminiVersion + ":generateContent?key=" + apiKey;
-        String jsonBody = geminiProvider.buildRequestMessage(userInput);
+        String jsonBody = geminiProvider.buildRequestMessage(userInput, systemPrompt);
         RequestBody body = RequestBody.create(jsonBody, JSON);
         Request request = new Request.Builder()
                 .url(url)
@@ -112,14 +129,19 @@ public class ChatFragment extends Fragment {
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                if (getActivity() != null) getActivity().runOnUiThread(() -> showToast("请求失败: " + e.getMessage()));
+                if (getActivity() != null) getActivity().runOnUiThread(() -> textChatOutput.setText("网络请求失败: " + e.getMessage()));
             }
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String resp = response.body() != null ? response.body().string() : "";
+                android.util.Log.e("GeminiAPI", "Response code: " + response.code() + ", body: " + resp);
                 if (getActivity() != null) getActivity().runOnUiThread(() -> {
-                    String modelReply = extractGeminiReply(resp);
-                    appendMessageToView(modelReply, false);
+                    if (!response.isSuccessful()) {
+                        textChatOutput.setText("API错误: " + response.code() + "\n" + resp);
+                    } else {
+                        String modelReply = extractGeminiReply(resp);
+                        textChatOutput.setText(modelReply);
+                    }
                     editChatMessage.setText("");
                 });
             }
@@ -127,17 +149,10 @@ public class ChatFragment extends Fragment {
     }
 
     private void appendMessageToView(String message, boolean isUser) {
-        SpannableString span;
-        if (isUser) {
-            span = new SpannableString("我: " + message + "\n");
-            span.setSpan(new ForegroundColorSpan(0xFF1976D2), 0, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            span.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        } else {
-            span = new SpannableString("Gemini: " + message + "\n");
-            span.setSpan(new ForegroundColorSpan(0xFF388E3C), 0, 7, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            span.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, 7, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        // 不再使用历史消息区，仅保留输出区
+        if (!isUser && textChatOutput != null) {
+            textChatOutput.setText(message);
         }
-        textChatMessages.append(span);
     }
     private void appendMessageToView(String message) {
         appendMessageToView(message, false);
@@ -172,5 +187,35 @@ public class ChatFragment extends Fragment {
             return json;
         }
         return json;
+    }
+
+    private void analyzeHistoryAndUpdatePrompt() {
+        // 取最近N轮对话
+        StringBuilder history = new StringBuilder();
+        int start = Math.max(0, chatHistory.size() - HISTORY_ANALYZE_WINDOW);
+        for (int i = start; i < chatHistory.size(); i++) {
+            history.append(chatHistory.get(i)).append("\n");
+        }
+        String analysisPrompt = "请根据以下对话内容，判断用户的心理状态，并生成一句适合AI陪护的系统提示词（如‘你要温柔鼓励用户’或‘你要多倾听和安慰’），只返回这句提示词：\n" + history;
+        // 直接用 Gemini API 分析
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + geminiVersion + ":generateContent?key=" + apiKey;
+        String jsonBody = geminiProvider.buildRequestMessage(analysisPrompt, "你是心理健康分析师，请只返回一句系统提示词");
+        RequestBody body = RequestBody.create(jsonBody, JSON);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) { /* 可忽略分析失败 */ }
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String resp = response.body() != null ? response.body().string() : "";
+                String newPrompt = extractGeminiReply(resp);
+                if (getActivity() != null && newPrompt != null && !newPrompt.isEmpty()) {
+                    getActivity().runOnUiThread(() -> editChatPrompt.setText(newPrompt));
+                }
+            }
+        });
     }
 }

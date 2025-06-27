@@ -27,13 +27,22 @@ public class GeminiProvider implements ModelProvider {
 
     @Override
     public String buildRequestMessage(String userInput) {
-        // Gemini 推荐的消息格式，role:user, parts:[text]
-        return "{" +
-                "\"model\":\"" + modelVersion + "\"," +
-                "\"contents\":[{" +
-                "\"role\":\"user\"," +
-                "\"parts\":[{\"text\":\"" + userInput + "\"}]" +
-                "}]" +
-                "}";
+        return buildRequestMessage(userInput, null);
+    }
+
+    @Override
+    public String buildRequestMessage(String userInput, String systemPrompt) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"contents\":[");
+        // Gemini REST API 不支持 system 角色，将 systemPrompt 作为 user 内容前缀
+        String input = userInput;
+        if (systemPrompt != null && !systemPrompt.isEmpty()) {
+            input = systemPrompt + "\n" + userInput;
+        }
+        sb.append("{\"role\":\"user\",\"parts\":[{\"text\":\"")
+          .append(input.replace("\"", "\\\""))
+          .append("\"}]}]");
+        sb.append("}");
+        return sb.toString();
     }
 }

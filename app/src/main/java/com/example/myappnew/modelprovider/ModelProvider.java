@@ -17,6 +17,11 @@ public interface ModelProvider {
     String buildRequestMessage(String userInput);
 
     /**
+     * 构造大模型请求消息体，支持自定义系统 prompt。
+     */
+    String buildRequestMessage(String userInput, String systemPrompt);
+
+    /**
      * 设置当前大模型的具体版本（如 gemini-1.5-flash、gemini-1.5-pro 等）。
      */
     void setModelVersion(String version);
