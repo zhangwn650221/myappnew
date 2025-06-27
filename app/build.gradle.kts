@@ -107,5 +107,6 @@ dependencies {
     // implementation(libs.openai.kotlin.client) // Commented out as we are using Gemini
     implementation(libs.google.ai.client)
     implementation(libs.guava) // Added Guava dependency
+    implementation("com.google.android.gms:play-services-auth:20.7.0") // Google Sign-In dependency
 
 }

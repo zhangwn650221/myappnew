@@ -15,6 +15,12 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.myappnew.MainActivity;
 import com.example.myappnew.R;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 
 public class LoginActivity extends AppCompatActivity {
     private Spinner modelTypeSpinner;
@@ -24,6 +30,8 @@ public class LoginActivity extends AppCompatActivity {
     private static final String KEY_MODEL_TYPE = "model_type";
     private static final String KEY_API = "user_api_key";
     private static final String KEY_GEMINI_VERSION = "gemini_version";
+    private static final int RC_SIGN_IN = 9001;
+    private GoogleSignInClient mGoogleSignInClient;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -42,7 +50,9 @@ public class LoginActivity extends AppCompatActivity {
             if (validateModelSelectionAndApiKey()) loginWithChannel("Apple ID");
         });
         btnGoogle.setOnClickListener(v -> {
-            if (validateModelSelectionAndApiKey()) loginWithChannel("Google");
+            // 直接发起 Google 登录
+            Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+            startActivityForResult(signInIntent, RC_SIGN_IN);
         });
         btnPhone.setOnClickListener(v -> {
             if (validateModelSelectionAndApiKey()) loginWithChannel("手机号");
@@ -90,6 +100,11 @@ public class LoginActivity extends AppCompatActivity {
                 prefs.edit().putString(KEY_API, apiKey).apply();
             }
         });
+
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
     private boolean validateModelSelectionAndApiKey() {
@@ -112,5 +127,28 @@ public class LoginActivity extends AppCompatActivity {
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == RC_SIGN_IN) {
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            handleSignInResult(task);
+        }
+    }
+
+    private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
+        try {
+            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+            String email = account.getEmail();
+            String name = account.getDisplayName();
+            Toast.makeText(this, "Google 登录成功：" + email, Toast.LENGTH_SHORT).show();
+            // 可在此处保存邮箱到 SharedPreferences 或跳转主界面
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+        } catch (ApiException e) {
+            Toast.makeText(this, "Google 登录失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 }
