@@ -58,6 +58,9 @@ import okhttp3.Response;
  * </ul>
  * ---
  */
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class ChatFragment extends Fragment {
     private EditText editChatMessage;
     private Button buttonSendMessage;

@@ -21,6 +21,9 @@ import com.example.myappnew.services.llm.LlmResponse;
 import com.example.myappnew.services.llm.LlmService;
 import com.example.myappnew.services.llm.LlmServiceProvider;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class JournalDetailFragment extends Fragment {
     private TextView textContent;
     private TextView textTimestamp;
@@ -32,8 +35,8 @@ public class JournalDetailFragment extends Fragment {
 
     private String lastPrompt = null;
 
-    private LlmServiceProvider llmServiceProvider;
-    private LlmService llmService;
+    @Inject
+    LlmService llmService;
 
     @Nullable
     @Override
@@ -59,8 +62,7 @@ public class JournalDetailFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        llmServiceProvider = new LlmServiceProvider();
-        llmService = llmServiceProvider.getService();
+        // llmService will be injected by Hilt.
     }
 
     private String generatePrompt(JournalEntry entry) {

@@ -15,6 +15,9 @@ import com.example.myappnew.services.llm.LlmServiceProvider;
 // import java.io.ByteArrayOutputStream;
 // import java.io.IOException;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import dagger.hilt.android.qualifiers.ApplicationContext;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -33,13 +36,15 @@ import retrofit2.Response;
  * </ul>
  * ---
  */
+@Singleton
 public class VoiceAnalysisService {
-    private LlmService llmService;
-    private Context context;
+    private final LlmService llmService;
+    private final Context context;
 
-    public VoiceAnalysisService(Context context, LlmServiceProvider llmServiceProvider) {
-        this.context = context.getApplicationContext();
-        this.llmService = llmServiceProvider.getService();
+    @Inject
+    public VoiceAnalysisService(@ApplicationContext Context context, LlmService llmService) {
+        this.context = context;
+        this.llmService = llmService;
     }
 
     public void analyzeVoice(Uri audioUri, AnalysisCallback callback) {

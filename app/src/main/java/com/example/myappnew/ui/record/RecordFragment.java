@@ -48,6 +48,9 @@ import com.example.myappnew.services.media.VoiceAnalysisService;
  * </ul>
  * ---
  */
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class RecordFragment extends Fragment {
 
     private Button buttonCaptureImage;
@@ -62,8 +65,10 @@ public class RecordFragment extends Fragment {
 
     private static final String TAG_DEBUG = "DEBUG-RecordFragment"; // Tag for debug logs
 
-    private ImageAnalysisService imageAnalysisService;
-    private VoiceAnalysisService voiceAnalysisService;
+    @Inject
+    ImageAnalysisService imageAnalysisService;
+    @Inject
+    VoiceAnalysisService voiceAnalysisService;
 
     // ActivityResultLaunchers for permissions and camera
     private ActivityResultLauncher<String> requestCameraPermissionLauncher;
@@ -79,9 +84,7 @@ public class RecordFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        LlmServiceProvider llmProvider = new LlmServiceProvider();
-        imageAnalysisService = new ImageAnalysisService(requireContext(), llmProvider);
-        voiceAnalysisService = new VoiceAnalysisService(requireContext(), llmProvider);
+        // Services will be injected by Hilt.
 
         // Initialize permission launcher
         requestCameraPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {

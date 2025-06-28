@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.ksp)
+    alias(libs.plugins.hilt)
 }
 
 // It's generally better to place imports at the very top of the file,
@@ -62,23 +63,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Re-apply for release or ensure they are correctly inherited if values differ
-            // For simplicity, if release uses the same keys as debug/defaultConfig,
-            // these re-declarations might not be strictly necessary if already in defaultConfig.
-            // However, to be explicit for release:
-            val geminiApiKeyRelease = localProperties.getProperty("GEMINI_API_KEY", "")
-            val deepSeekApiKeyRelease = localProperties.getProperty("DEEPSEEK_API_KEY", "")
-            val llmApiKeyReleaseDefault = localProperties.getProperty("LLM_API_KEY", geminiApiKeyRelease)
-
-            buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKeyRelease\"")
-            buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepSeekApiKeyRelease\"")
-            buildConfigField("String", "LLM_API_KEY", "\"$llmApiKeyReleaseDefault\"")
         }
         debug {
             // Inherits buildConfigFields from defaultConfig by default.
-            // If you needed different keys for debug, you would define/override them here, e.g.:
-            // val geminiApiKeyDebug = localProperties.getProperty("DEBUG_GEMINI_API_KEY", "")
-            // buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKeyDebug\"")
         }
     }
     compileOptions {
@@ -94,19 +81,37 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // Navigation
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+
+    // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // Network
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
-     implementation(libs.retrofit)
+    implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.retrofit.mock)
-    // implementation(libs.openai.kotlin.client) // Commented out as we are using Gemini
-    implementation(libs.google.ai.client)
-    implementation(libs.guava) // Added Guava dependency
-    implementation("com.google.android.gms:play-services-auth:20.7.0") // Google Sign-In dependency
 
+    // AI/LLM
+    implementation(libs.google.ai.client)
+
+    // Auth
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+    // ViewModel
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.activity.ktx) // For by viewModels()
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+
+    // Guava - Consider removing if not essential
+    implementation(libs.guava)
 }

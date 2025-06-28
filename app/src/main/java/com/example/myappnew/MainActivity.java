@@ -3,10 +3,11 @@ package com.example.myappnew;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
-import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.Navigation;
+import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
-import com.example.myappnew.ui.settings.SettingsFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import dagger.hilt.android.AndroidEntryPoint;
 
 /**
  * Main activity of the application. Sets up the main UI and navigation.
@@ -81,6 +82,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
  *
  * ---
  */
+@AndroidEntryPoint
 public class MainActivity extends AppCompatActivity {
 
     @Override

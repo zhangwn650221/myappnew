@@ -7,17 +7,14 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.myappnew.R;
-import com.example.myappnew.data.AppDatabase;
-import com.example.myappnew.data.JournalDao;
 import com.example.myappnew.data.JournalEntry;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.Date;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Fragment for displaying and managing journal entries.
@@ -48,22 +45,21 @@ import java.util.concurrent.Executors;
  * </ul>
  * ---
  */
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class JournalFragment extends Fragment {
 
     private RecyclerView recyclerView;
     private JournalEntryAdapter adapter;
     private FloatingActionButton fabAddEntry;
-    private JournalDao journalDao;
-    private ExecutorService databaseWriteExecutor;
-
+    private JournalViewModel journalViewModel;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AppDatabase db = AppDatabase.getDatabase(requireContext());
-        journalDao = db.journalDao();
         adapter = new JournalEntryAdapter();
-        databaseWriteExecutor = Executors.newSingleThreadExecutor();
+        journalViewModel = new ViewModelProvider(this).get(JournalViewModel.class);
     }
 
     @Nullable
@@ -78,9 +74,7 @@ public class JournalFragment extends Fragment {
         fabAddEntry = root.findViewById(R.id.fab_add_journal_entry);
         fabAddEntry.setOnClickListener(v -> {
             JournalEntry newEntry = new JournalEntry("Dummy journal entry: " + new Date().toString());
-            databaseWriteExecutor.execute(() -> {
-                journalDao.insert(newEntry);
-            });
+            journalViewModel.insert(newEntry);
         });
 
         return root;
@@ -89,16 +83,8 @@ public class JournalFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        journalDao.getAllEntries().observe(getViewLifecycleOwner(), entries -> {
+        journalViewModel.getAllEntries().observe(getViewLifecycleOwner(), entries -> {
             adapter.submitList(entries);
         });
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (databaseWriteExecutor != null && !databaseWriteExecutor.isShutdown()) {
-            databaseWriteExecutor.shutdown();
-        }
     }
 }
