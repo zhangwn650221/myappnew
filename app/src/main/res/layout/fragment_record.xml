@@ -63,7 +63,7 @@
         android:layout_height="100dp"
         android:adjustViewBounds="true"
         android:scaleType="centerInside"
-        android.contentDescription="Preview of captured image"
+        android:contentDescription="Preview of captured image"
         android:visibility="gone"
         android:layout_marginBottom="12dp"/>
 

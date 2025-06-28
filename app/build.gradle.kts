@@ -31,7 +31,7 @@ kotlin {
 android {
     namespace = "com.example.myappnew" // 确保这里的包名和您项目的一致
     compileSdk = 34
-
+	
     buildFeatures {
         buildConfig = true
     }
@@ -112,10 +112,17 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
-    // Guava - Consider removing if not essential
-    implementation(libs.guava) // 对，你来加上
-
+    // 强制指定 javapoet 版本，解决 Hilt/Javapoet 冲突
+    implementation("com.squareup:javapoet:1.13.0")
+	implementation("com.google.guava:guava:33.2.0-android")
     // RxJava3
     implementation(libs.rxjava3.rxjava)
     implementation(libs.rxjava3.rxandroid)
+}
+
+// 全局强制依赖解析策略，防止依赖冲突
+configurations.all {
+    resolutionStrategy {
+       force("com.squareup:javapoet:1.13.0")
+    }
 }
