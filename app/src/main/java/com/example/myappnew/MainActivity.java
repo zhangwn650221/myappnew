@@ -7,6 +7,7 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import androidx.navigation.fragment.NavHostFragment; // Added missing import for NavHostFragment
 import dagger.hilt.android.AndroidEntryPoint;
 
 /**

@@ -29,6 +29,7 @@ import com.example.myappnew.R;
 import com.example.myappnew.services.llm.LlmServiceProvider;
 import com.example.myappnew.services.media.ImageAnalysisService;
 import com.example.myappnew.services.media.VoiceAnalysisService;
+import javax.inject.Inject; // Added missing import for @Inject
 
 /**
  * Fragment for recording emotions (simulated image/voice) and displaying AI-generated advice.

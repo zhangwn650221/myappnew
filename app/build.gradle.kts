@@ -113,12 +113,9 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     // Guava - Consider removing if not essential
-    implementation(libs.guava)
+    implementation(libs.guava) // 对，你来加上
 
     // RxJava3
     implementation(libs.rxjava3.rxjava)
     implementation(libs.rxjava3.rxandroid)
-
-    // JavaPoet (explicitly added to resolve potential Hilt/KSP conflicts)
-    implementation(libs.javapoet)
 }

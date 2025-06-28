@@ -21,6 +21,7 @@ import com.example.myappnew.services.llm.LlmResponse;
 import com.example.myappnew.services.llm.LlmService;
 import com.example.myappnew.services.llm.LlmServiceProvider;
 
+import javax.inject.Inject; // Added missing import for @Inject
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint

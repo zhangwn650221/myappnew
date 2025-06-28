@@ -2,6 +2,7 @@ package com.example.myappnew.data;
 
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
+import androidx.room.Ignore; // Added missing import for @Ignore
 import java.util.Date;
 
 @Entity(tableName = "journal_entries")
@@ -19,6 +20,7 @@ public class JournalEntry {
     // 用户画像字段（可扩展为JSON或单独表）
     public String userProfileJson;
 
+    @Ignore // Mark this constructor to be ignored by Room
     public JournalEntry(String content) {
         this.content = content;
         this.timestamp = new Date().getTime();
@@ -30,6 +32,7 @@ public class JournalEntry {
         this.timestamp = timestamp;
     }
 
+    @Ignore // Mark this constructor to be ignored by Room
     public JournalEntry() {}
 
 
