@@ -114,4 +114,11 @@ dependencies {
 
     // Guava - Consider removing if not essential
     implementation(libs.guava)
+
+    // RxJava3
+    implementation(libs.rxjava3.rxjava)
+    implementation(libs.rxjava3.rxandroid)
+
+    // JavaPoet (explicitly added to resolve potential Hilt/KSP conflicts)
+    implementation(libs.javapoet)
 }
