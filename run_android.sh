@@ -50,3 +50,39 @@ green "启动 App: $pkg ..."
 adb shell monkey -p "$pkg" -c android.intent.category.LAUNCHER 1
 
 green "全部完成！你可以在模拟器中体验最新构建的 App。"
+
+APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+
+# 检查 adb 是否可用
+if ! command -v adb &> /dev/null; then
+  echo "adb 未安装或未加入 PATH"
+  exit 1
+fi
+
+# 检查设备是否连接
+DEVICE_ONLINE=$(adb devices | grep -w "device")
+if [ -z "$DEVICE_ONLINE" ]; then
+  echo "未检测到在线的 Android 设备或模拟器，请连接设备并开启 USB 调试。"
+  exit 1
+fi
+
+# 检查 package 服务
+if ! adb shell pm path android &> /dev/null; then
+  echo "设备 package 服务不可用，可能是模拟器未启动完全或系统异常。"
+  exit 1
+fi
+
+# 检查 apk 是否存在
+if [ ! -f "$APK_PATH" ]; then
+  echo "未找到 APK 文件：$APK_PATH，请先编译项目。"
+  exit 1
+fi
+
+# 安装 apk
+adb install -r "$APK_PATH"
+if [ $? -ne 0 ]; then
+  echo "安装 APK 失败，请检查设备状态和日志。"
+  exit 1
+fi
+
+echo "APK 安装成功！"
